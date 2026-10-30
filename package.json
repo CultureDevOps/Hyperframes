@@ -1,12 +1,11 @@
 {
   "name": "culturedevops-motion-design",
+  "version": "0.1.1",
   "private": true,
-  "version": "0.1.0",
   "scripts": {
-    "preview": "hyperframes preview compositions/culturedevops/intro",
-    "lint": "hyperframes lint compositions/culturedevops/intro",
-    "doctor": "hyperframes doctor",
-    "render": "hyperframes render compositions/culturedevops/intro -o renders/culturedevops-intro.mp4"
+    "render": "cd compositions/culturedevops/intro && hyperframes render",
+    "preview": "cd compositions/culturedevops/intro && hyperframes preview",
+    "doctor": "hyperframes doctor"
   },
   "devDependencies": {
     "hyperframes": "latest"
