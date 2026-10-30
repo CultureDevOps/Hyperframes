@@ -1,0 +1,39 @@
+name: Render Culture DevOps intro
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'compositions/culturedevops/intro/**'
+      - 'package.json'
+      - '.github/workflows/render.yml'
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check HyperFrames CLI
+        run: npx hyperframes --help
+      - name: Render
+        working-directory: compositions/culturedevops/intro
+        run: npx --no-install hyperframes render
+      - name: Upload rendered output and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: culturedevops-render
+          path: |
+            compositions/culturedevops/intro/**/*.mp4
+            compositions/culturedevops/intro/*.mp4
+            renders/**/*.mp4
+          if-no-files-found: warn
