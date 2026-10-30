@@ -1,21 +1,21 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-width="1920" data-height="1080" data-duration="10" data-fps="30">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Culture DevOps — Intro</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080f1c;color:#f4f8ff;font-family:Inter,Arial,sans-serif}
-.stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:radial-gradient(ellipse at 50% 46%,#17345b 0%,#0c1a30 43%,#070e1b 78%)}
+.stage{position:relative;width:100vw;height:100vh;overflow:hidden;background:radial-gradient(ellipse at 50% 46%,#17345b 0%,#0c1a30 43%,#070e1b 78%)}
 .grid{position:absolute;inset:0;opacity:.2;background-image:linear-gradient(#62b9ff22 1px,transparent 1px),linear-gradient(90deg,#62b9ff22 1px,transparent 1px);background-size:96px 96px;transform:perspective(700px) rotateX(18deg) scale(1.4)}
-.orb{position:absolute;width:700px;height:700px;left:610px;top:170px;border-radius:50%;border:2px solid #49b4f555;box-shadow:0 0 100px #278ad533,inset 0 0 90px #278ad522;animation:pulse 10s linear both}
+.orb{position:absolute;width:700px;height:700px;left:50%;top:50%;margin-left:-350px;margin-top:-350px;border-radius:50%;border:2px solid #49b4f555;box-shadow:0 0 100px #278ad533,inset 0 0 90px #278ad522;animation:pulse 10s linear both}
 .orb:after{content:"";position:absolute;inset:80px;border:1px dashed #80d9ff77;border-radius:50%;animation:spin 10s linear both}
-.content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 8%}
 .kicker{font-size:30px;letter-spacing:12px;text-transform:uppercase;color:#80d8ff;opacity:0;animation:reveal 10s linear both}
-h1{font-size:116px;letter-spacing:-4px;margin:35px 0 28px;font-weight:800;opacity:0;animation:title 10s linear both}
+h1{font-size:clamp(56px,6vw,116px);white-space:nowrap;letter-spacing:-4px;margin:35px 0 28px;font-weight:800;opacity:0;animation:title 10s linear both}
 h1 span{color:#62c9ff}.rule{width:0;height:3px;background:linear-gradient(90deg,transparent,#64caff,transparent);animation:rule 10s linear both}
-.tagline{display:flex;gap:28px;margin-top:48px;font-size:42px;font-weight:500}
-.tagline span{opacity:0;transform:translateY(25px)}.tagline span:nth-child(1){animation:word1 10s linear both}.tagline span:nth-child(2){animation:word2 10s linear both}.tagline span:nth-child(3){animation:word3 10s linear both}
-.dot{color:#62c9ff}.vignette{position:absolute;inset:0;box-shadow:inset 0 0 180px 65px #040a15;pointer-events:none}
+.tagline{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:22px;margin-top:48px;font-size:clamp(20px,2.2vw,42px);font-weight:500}
+.tagline span{opacity:0;transform:translateY(25px)}.tagline span:nth-child(1){animation:word1 10s linear both}.tagline span:nth-child(3){animation:word2 10s linear both}.tagline span:nth-child(5){animation:word3 10s linear both}
+.dot{color:#62c9ff;opacity:1!important;transform:none!important}.vignette{position:absolute;inset:0;box-shadow:inset 0 0 180px 65px #040a15;pointer-events:none}
 @keyframes pulse{0%{transform:scale(.7);opacity:0}20%{opacity:1}80%{opacity:.8}100%{transform:scale(1.1);opacity:0}}
 @keyframes spin{from{transform:rotate(0)}to{transform:rotate(130deg)}}
 @keyframes reveal{0%,10%{opacity:0;transform:translateY(18px)}25%,85%{opacity:1;transform:none}100%{opacity:0}}
