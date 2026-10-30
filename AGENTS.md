@@ -1,10 +1,10 @@
 # Instructions for Codex — Hyperframes motion design
 
-This repository hosts reusable motion-design compositions for Culture DevOps and MarocMosaic.
+This repository hosts reusable motion-design compositions for Culture DevOps only.
 
 ## Principles
 - Prefer reproducible, code-driven animations and deterministic renders.
-- Keep each brand's assets and compositions isolated.
+- Keep Culture DevOps assets and compositions organized by campaign or format.
 - Do not commit credentials, API keys, generated videos, or large binaries.
 - Before using HyperFrames CLI commands or APIs, inspect its current upstream documentation; do not assume an unverified CLI interface.
 - Favor accessible typography, 16:9 compositions, and clear pacing.
