@@ -1,0 +1,47 @@
+name: Render Culture DevOps MVC explainer
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'compositions/culturedevops/mvc/**'
+      - 'scripts/generate_mvc_soundtrack.py'
+      - '.github/workflows/mvc.yml'
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install HyperFrames
+        run: npm install --no-audit --no-fund
+      - name: Render MVC explainer
+        working-directory: compositions/culturedevops/mvc
+        run: npx --no-install hyperframes render --output renders/mvc-explainer.mp4 --fps 30 --quality high
+      - name: Add original soundtrack
+        working-directory: compositions/culturedevops/mvc
+        run: |
+          python3 ../../../scripts/generate_mvc_soundtrack.py soundtrack.wav
+          ffmpeg -y -i renders/mvc-explainer.mp4 -i soundtrack.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -t 35 -movflags +faststart renders/mvc-with-sound.mp4
+          mv renders/mvc-with-sound.mp4 renders/mvc-explainer.mp4
+      - name: Verify full HD, duration and sound
+        working-directory: compositions/culturedevops/mvc
+        run: |
+          test -s renders/mvc-explainer.mp4
+          resolution="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 renders/mvc-explainer.mp4)"
+          echo "Resolution: $resolution"
+          test "$resolution" = "1920x1080"
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 renders/mvc-explainer.mp4 | grep -q 'codec_name=aac'
+      - name: Upload MVC video
+        uses: actions/upload-artifact@v4
+        with:
+          name: culturedevops-mvc-explainer
+          path: compositions/culturedevops/mvc/renders/mvc-explainer.mp4
+          if-no-files-found: error
