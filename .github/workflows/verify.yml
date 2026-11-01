@@ -1,0 +1,238 @@
+name: Validate render tooling and ephemeral MP4 smoke
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'compositions/culturedevops/intro/**'
+      - 'compositions/culturedevops/mvc/**'
+      - 'compositions/culturedevops/nounours/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (verified 2026-11-01)
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5 (verified 2026-11-01)
+        with:
+          python-version: '3.12'
+      - name: Test render metadata checks and workflow boundaries
+        run: python -m unittest discover -s tests -v
+      - name: Check PowerShell local plan (no render or upload)
+        run: pwsh -NoProfile -File scripts/render_and_review.ps1 -Composition mvc -PlanOnly
+      - name: Audit pinned FFmpeg security policy (read-only)
+        run: python3 scripts/audit_ffmpeg_security.py
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 (verified 2026-11-01)
+        with:
+          node-version: '22'
+      - name: Install locked dependencies (no render)
+        run: npm ci --no-audit --no-fund
+      - name: Check HyperFrames CLI
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: '1'
+        run: |
+          npm ls hyperframes --depth=0
+          npx --no-install hyperframes --help > /dev/null
+      - name: Lint intro composition (required; no render)
+        working-directory: compositions/culturedevops/intro
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: '1'
+        run: npx --no-install hyperframes lint
+      - name: Lint MVC composition (required; no render)
+        working-directory: compositions/culturedevops/mvc
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: '1'
+        run: npx --no-install hyperframes lint
+      - name: Lint Nounours composition (required; no render)
+        working-directory: compositions/culturedevops/nounours
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: '1'
+        run: npx --no-install hyperframes lint
+
+  test-windows-local:
+    name: Native Windows PowerShell and NTFS (no media)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: windows-2022
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (verified 2026-11-01)
+      - name: Windows PowerShell 5.1 plan-only checks
+        shell: powershell
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 5) { throw 'Expected Windows PowerShell 5.1' }
+          .\scripts\render_and_review.ps1 -Composition intro -PlanOnly
+          .\scripts\render_and_review.ps1 -Composition mvc -PlanOnly
+      - name: Windows NTFS privacy and regression tests (isolated temp only)
+        shell: powershell
+        run: .\tests\test_windows_acl.ps1
+      - name: PowerShell 7 compatibility plan-only
+        shell: pwsh
+        run: .\scripts\render_and_review.ps1 -Composition nounours -PlanOnly
+      - name: Windows PowerShell 7 NTFS interruption and cleanup tests (no media)
+        shell: pwsh
+        run: .\tests\test_windows_acl.ps1
+
+  smoke-intro:
+    name: Ephemeral intro smoke (no upload)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (verified 2026-11-01)
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 (verified 2026-11-01)
+        with:
+          node-version: '22'
+      - name: Install pinned FFmpeg and verify baseline
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg=7:6.1.1-3ubuntu5
+          python3 scripts/check_toolchain.py
+      - name: Install pinned HyperFrames
+        run: npm ci --no-audit --no-fund
+      - name: Render intro on disposable runner (never uploaded)
+        working-directory: compositions/culturedevops/intro
+        run: npx --no-install hyperframes render --output renders/culturedevops-intro.mp4 --fps 30 --quality high
+      - name: Mux original soundtrack
+        working-directory: compositions/culturedevops/intro
+        run: |
+          python3 ../../../scripts/generate_soundtrack.py soundtrack.wav
+          ffmpeg -y -i renders/culturedevops-intro.mp4 -i soundtrack.wav \
+            -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k \
+            -t 10 -movflags +faststart renders/culturedevops-with-sound.mp4
+          mv renders/culturedevops-with-sound.mp4 renders/culturedevops-intro.mp4
+      - name: Check final ephemeral MP4 contract
+        run: python3 scripts/verify_render.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10
+      - name: Verify bundled Chrome/FFmpeg baseline
+        run: python3 scripts/check_toolchain.py --check-chrome --show-sha256
+      - name: Exercise local contact-sheet extraction on ephemeral runner
+        run: |
+          umask 077
+          python3 scripts/private_visual_review.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10 --out-root "$RUNNER_TEMP/ops010-private-review"
+          test -z "$(find "$RUNNER_TEMP/ops010-private-review" -name '*.mp4' -print -quit)"
+      - name: Exercise full PowerShell render + soundtrack + private review (no upload)
+        run: |
+          pwsh -NoProfile -File scripts/render_and_review.ps1 -Composition intro -SkipInstall -OutputDirectory "$RUNNER_TEMP/ops010-powershell-private"
+          test "$(find "$RUNNER_TEMP/ops010-powershell-private" -maxdepth 1 -name '*.mp4' | wc -l)" -eq 1
+          test "$(find "$RUNNER_TEMP/ops010-powershell-private" -name 'contact-sheet.png' | wc -l)" -eq 1
+          test -z "$(find compositions/culturedevops/intro/renders -maxdepth 1 -name 'ops010-*' -print -quit)"
+
+  smoke-other:
+    name: Ephemeral ${{ matrix.composition }} smoke (no upload)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - composition: nounours
+            filename: nounours-antoine-dany.mp4
+            generator: generate_teddy_soundtrack.py
+            seconds: 10
+          - composition: mvc
+            filename: mvc-explainer.mp4
+            generator: generate_mvc_soundtrack.py
+            seconds: 35
+    env:
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (verified 2026-11-01)
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 (verified 2026-11-01)
+        with:
+          node-version: '22'
+      - name: Install pinned FFmpeg and verify baseline
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg=7:6.1.1-3ubuntu5
+          python3 scripts/check_toolchain.py
+      - name: Install pinned HyperFrames
+        run: npm ci --no-audit --no-fund
+      - name: Render disposable ${{ matrix.composition }} MP4 (never uploaded)
+        working-directory: compositions/culturedevops/${{ matrix.composition }}
+        run: npx --no-install hyperframes render --output renders/${{ matrix.filename }} --fps 30 --quality high
+      - name: Mux original music on disposable runner
+        working-directory: compositions/culturedevops/${{ matrix.composition }}
+        run: |
+          python3 ../../../scripts/${{ matrix.generator }} soundtrack.wav
+          ffmpeg -y -i renders/${{ matrix.filename }} -i soundtrack.wav \
+            -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k \
+            -t ${{ matrix.seconds }} -movflags +faststart renders/with-sound.mp4
+          mv renders/with-sound.mp4 renders/${{ matrix.filename }}
+      - name: Validate ephemeral final MP4
+        run: python3 scripts/verify_render.py compositions/culturedevops/${{ matrix.composition }}/renders/${{ matrix.filename }} --seconds ${{ matrix.seconds }}
+      - name: Verify bundled Chrome/FFmpeg baseline
+        run: python3 scripts/check_toolchain.py --check-chrome
+
+  probe-ubuntu-ffmpeg:
+    name: Probe FFmpeg APT candidate on ${{ matrix.os }} (no install)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (verified 2026-11-01)
+      - name: Inspect signed Ubuntu APT metadata only
+        run: |
+          sudo apt-get update -qq
+          python3 scripts/probe_ffmpeg_apt.py
+
+  probe-debian-ffmpeg:
+    name: Probe Debian 13 official amd64 digest (isolated no-install)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Probe official Debian image with no mounted Docker socket
+        run: |
+          set -eu
+          docker pull docker.io/library/debian@sha256:e2914ec98e08b24b4cee3cefcb9f90dfb5519f8d215a2ccf0c9a49b10b6e43de
+          docker run --rm \
+            --read-only \
+            --cap-drop=ALL \
+            --cap-add=SETUID \
+            --cap-add=SETGID \
+            --cap-add=CHOWN \
+            --cap-add=FOWNER \
+            --cap-add=DAC_OVERRIDE \
+            --security-opt=no-new-privileges \
+            --pids-limit=128 \
+            --memory=512m \
+            --tmpfs /var/lib/apt/lists:rw,nosuid,nodev,size=128m \
+            --tmpfs /var/cache/apt:rw,nosuid,nodev,size=32m \
+            --tmpfs /tmp:rw,nosuid,nodev,size=64m \
+            docker.io/library/debian@sha256:e2914ec98e08b24b4cee3cefcb9f90dfb5519f8d215a2ccf0c9a49b10b6e43de sh -ec '
+              set -eu
+              grep -qx "ID=debian" /etc/os-release
+              grep -qx "VERSION_CODENAME=trixie" /etc/os-release
+              test "$(dpkg --print-architecture)" = amd64
+              echo "DEBIAN_IMAGE_ARCH=amd64"
+              apt-get update -qq
+              apt-cache policy ffmpeg
+              candidate="$(apt-cache policy ffmpeg | sed -n "s/^ *Candidate: //p")"
+              test -n "$candidate"
+              test "$candidate" != "(none)"
+              echo "DEBIAN_FFMPEG_APT_CANDIDATE=$candidate"
+              echo "SECURITY_STATUS=NOT_ASSESSED; NO_PACKAGE_INSTALLED; NO_MEDIA_RENDERED"
+            '

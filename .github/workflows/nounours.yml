@@ -1,27 +1,32 @@
 name: Render Nounours Antoine et Dany
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'compositions/culturedevops/nounours/**'
-      - 'scripts/generate_teddy_soundtrack.py'
-      - '.github/workflows/nounours.yml'
+    inputs:
+      upload_artifact:
+        description: 'Upload MP4 artifact only after separate approval'
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   render:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (verified 2026-11-01)
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 (verified 2026-11-01)
         with:
           node-version: '22'
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install pinned FFmpeg and verify baseline
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg=7:6.1.1-3ubuntu5
+          python3 scripts/check_toolchain.py
       - name: Install HyperFrames
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Render animated teddy
         working-directory: compositions/culturedevops/nounours
         run: npx --no-install hyperframes render --output renders/nounours-antoine-dany.mp4 --fps 30 --quality high
@@ -31,17 +36,15 @@ jobs:
           python3 ../../../scripts/generate_teddy_soundtrack.py soundtrack.wav
           ffmpeg -y -i renders/nounours-antoine-dany.mp4 -i soundtrack.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -t 10 -movflags +faststart renders/nounours-with-sound.mp4
           mv renders/nounours-with-sound.mp4 renders/nounours-antoine-dany.mp4
-      - name: Verify landscape and sound
-        working-directory: compositions/culturedevops/nounours
-        run: |
-          test -s renders/nounours-antoine-dany.mp4
-          resolution="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 renders/nounours-antoine-dany.mp4)"
-          echo "Resolution: $resolution"
-          test "$resolution" = "1920x1080"
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 renders/nounours-antoine-dany.mp4 | grep -q 'codec_name=aac'
+      - name: Verify MP4 metadata
+        run: python3 scripts/verify_render.py compositions/culturedevops/nounours/renders/nounours-antoine-dany.mp4 --seconds 10
+      - name: Verify bundled Chrome/FFmpeg baseline
+        run: python3 scripts/check_toolchain.py --check-chrome
       - name: Upload teddy video
-        uses: actions/upload-artifact@v4
+        if: ${{ inputs.upload_artifact == true }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4 (verified 2026-11-01)
         with:
           name: nounours-antoine-dany
           path: compositions/culturedevops/nounours/renders/nounours-antoine-dany.mp4
           if-no-files-found: error
+          retention-days: 3
