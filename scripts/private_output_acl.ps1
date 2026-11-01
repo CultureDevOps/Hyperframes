@@ -83,6 +83,12 @@ function Initialize-PrivateWindowsDirectory {
     $systemSid = New-Object System.Security.Principal.SecurityIdentifier('S-1-5-18')
     $acl = Get-Acl -LiteralPath $full -ErrorAction Stop
     $acl.SetAccessRuleProtection($true, $false)
+    # Freshly created Windows directories can carry explicit Administrators or
+    # Users ACEs even after inherited rules are removed. Strip ALL these
+    # inherited-by-template explicit entries only on this newly created leaf.
+    foreach ($oldRule in @($acl.Access)) {
+        $acl.RemoveAccessRuleSpecific($oldRule)
+    }
     foreach ($sid in @($currentSid, $systemSid)) {
         $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
             $sid,
