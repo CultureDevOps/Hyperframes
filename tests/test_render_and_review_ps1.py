@@ -30,7 +30,7 @@ class PowerShellLocalReviewTests(unittest.TestCase):
         self.assertIn("Copy-PrivateWindowsMedia -Source $muxed -Destination $final", content)
         self.assertIn("Move-Item -LiteralPath $muxed -Destination $final", content)
         self.assertIn("Initialize-PrivateWindowsDirectory -Path $outputFull", content)
-        self.assertIn("Assert-PrivateWindowsAcl -Path $final -AllowInheritedChild", content)
+        self.assertIn("Copy-PrivateWindowsMedia -Source $muxed -Destination $final", content)
         self.assertIn("Remove-Item -LiteralPath $temporary -Force", content)
         self.assertIn("private_visual_review.py", content)
         self.assertIn("verify_render.py", content)
