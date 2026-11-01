@@ -20,8 +20,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install pinned FFmpeg and verify baseline
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg=6.1.1-3ubuntu5
+          python3 scripts/check_toolchain.py
       - name: Install HyperFrames
         run: npm ci --no-audit --no-fund
       - name: Render animated teddy
@@ -35,6 +38,8 @@ jobs:
           mv renders/nounours-with-sound.mp4 renders/nounours-antoine-dany.mp4
       - name: Verify MP4 metadata
         run: python3 scripts/verify_render.py compositions/culturedevops/nounours/renders/nounours-antoine-dany.mp4 --seconds 10
+      - name: Verify bundled Chrome/FFmpeg baseline
+        run: python3 scripts/check_toolchain.py --check-chrome
       - name: Upload teddy video
         if: ${{ inputs.upload_artifact == true }}
         uses: actions/upload-artifact@v4
