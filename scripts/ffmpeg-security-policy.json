@@ -14,5 +14,24 @@
     "distribution": "Ubuntu Pro / ESM Apps",
     "availability": "Not verified on GitHub-hosted runners; no Pro activation authorized"
   },
-  "decision": "Keep reproducible CI pinned for now and expose the known security gap. A new baseline requires reviewing Ubuntu USNs, verifying repo/license eligibility without spending or enabling Pro, updating all workflow pins and FFmpeg_BINARY, then rerunning 3 ephemeral smoke tests before any merge."
+  "decision": "Keep reproducible CI pinned for now and expose the known security gap. A new baseline requires reviewing Ubuntu USNs, verifying repo/license eligibility without spending or enabling Pro, updating all workflow pins and FFmpeg_BINARY, then rerunning 3 ephemeral smoke tests before any merge.",
+  "open_cve_evidence": {
+    "id": "CVE-2026-107678",
+    "checked_on": "2026-11-01",
+    "impact": "crafted MP4 MOV/PSSH input may cause stack exhaustion and denial of service",
+    "debian": {
+      "release": "trixie",
+      "apt_package": "7:7.1.5-0+deb13u1",
+      "status": "vulnerable",
+      "source": "https://security-tracker.debian.org/tracker/CVE-2026-107678"
+    },
+    "ubuntu": {
+      "noble_status": "needs_evaluation",
+      "resolute_status": "needs_evaluation",
+      "source": "https://ubuntu.com/security/CVE-2026-107678"
+    },
+    "scope": "This CVE is separate from USN-8915-1. No untrusted MP4 input is authorized and no candidate baseline is declared fixed.",
+    "status": "unresolved"
+  },
+  "remediation_gate": "Do not declare Ubuntu 24.04 or Debian 13 fixed for CVE-2026-107678. Vendor status and APT provenance must be reviewed before any switch; no Ubuntu Pro activation or external media input."
 }
