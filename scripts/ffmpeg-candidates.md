@@ -38,3 +38,40 @@ son digest, des CVE restantes et des bibliothèques ; tester ensuite les
 3 rendus éphémères avec leurs métadonnées, musiques et contrôles Chrome.
 Ne jamais mélanger des dépôts Debian et Ubuntu, activer Ubuntu Pro ni
 publier une vidéo sans autorisation séparée.
+
+## 01/11/2026 — réévaluation CVE ciblée et décision de sécurité
+
+Sources éditeur recoupées :
+- [Ubuntu USN-8915-1](https://ubuntu.com/security/notices/USN-8915-1) :
+  `7:6.1.1-3ubuntu5+esm15` (noble) et `7:8.0.1-3ubuntu2+esm5`
+  (resolute) annoncés dans **Ubuntu Pro / ESM Apps** pour les CVE
+  **de cet avis seulement**. Aucun droit Ubuntu Pro n'a été créé ou activé.
+- [Ubuntu CVE-2026-107678](https://ubuntu.com/security/CVE-2026-107678) :
+  statut FFmpeg **« Needs evaluation »** pour noble 24.04 et resolute 26.04 ;
+  ceci ne signifie ni « corrigé » ni « confirmé vulnérable » par Ubuntu.
+- [Debian CVE-2026-107678](https://security-tracker.debian.org/tracker/CVE-2026-107678) :
+  Trixie **`7:7.1.5-0+deb13u1` vulnérable**, correction reportée ;
+  exhaustion de pile via les boîtes PSSH du démultiplexeur MP4/MOV.
+- [Debian DSA-6361-1](https://security-tracker.debian.org/tracker/DSA-6361-1) :
+  ce **même** paquet corrige les CVE listées pour cet avis, sans effacer
+  les vulnérabilités ouvertes indépendantes.
+- [Debian FFmpeg](https://packages.debian.org/trixie/ffmpeg) :
+  version du paquet 13 stable confirmée.
+
+**Conclusion vérifiable :** ni Ubuntu 26.04 ni Debian 13 n'apportent
+aujourd'hui une preuve de remédiation globale, et le correctif ESM
+d'USN-8915-1 ne doit pas être interprété comme traitant CVE-2026-107678.
+Aucun basculement de l'exécuteur de rendu existant n'est autorisé.
+L'utilisation de MP4 externes non fiables reste hors périmètre ; les
+rendus CI manipulent des MP4 générés localement sur runners jetables,
+ce qui réduit mais n'annule pas le risque de dépendances compromises.
+
+Le manifeste `scripts/ffmpeg-security-policy.json` mémorise explicitement
+la distinction entre « vulnerable » (Debian) et « needs_evaluation »
+(Ubuntu). Le test obligatoire `audit_ffmpeg_security.py` échoue si
+ces observations sont silencieusement requalifiées en « fixed » ou
+si le document prétend que la vulnérabilité MP4 est résolue.
+C'est un **contrôle de cohérence d'un relevé daté, pas une interrogation
+continue du tracker** ni un scanner de CVE. Le prochain réexamen reste
+prévu avant le 15/11/2026. Les sondes APT Ubuntu et Debian **sans installation**
+et les trois rendus techniques éphémères restent inchangés.
