@@ -29,7 +29,7 @@ class CandidateTests(unittest.TestCase):
         wf = (ROOT / ".github/workflows/verify.yml").read_text()
         self.assertIn("  probe-ubuntu-ffmpeg:", wf)
         self.assertIn("os: [ubuntu-24.04, ubuntu-26.04]", wf)
-        block = wf.split("  probe-ubuntu-ffmpeg:", 1)[1]
+        block = wf.split("  probe-ubuntu-ffmpeg:", 1)[1].split("\n  probe-debian-ffmpeg:", 1)[0]
         self.assertIn("python3 scripts/probe_ffmpeg_apt.py", block)
         self.assertIn("sudo apt-get update -qq", block)
         for forbidden in ("apt-get install", "upload-artifact", "hyperframes render", "docker "):
