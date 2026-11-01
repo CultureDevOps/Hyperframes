@@ -83,11 +83,12 @@ function Invoke-Python {
     Invoke-Checked -Executable $script:pythonName -Arguments $all
 }
 
-$null = New-Item -ItemType Directory -Path $outputFull -Force
-if (-not $isWindowsHost) {
-    Invoke-Checked -Executable 'chmod' -Arguments @('700', $outputFull)
+if ($isWindowsHost) {
+    . (Join-Path $PSScriptRoot 'private_output_acl.ps1')
+    $outputFull = Initialize-PrivateWindowsDirectory -Path $outputFull
 } else {
-    Write-Warning 'Check inherited NTFS ACLs on the review directory; files are not encrypted.'
+    $null = New-Item -ItemType Directory -Path $outputFull -Force
+    Invoke-Checked -Executable 'chmod' -Arguments @('700', $outputFull)
 }
 $verifyScript = Join-Path $PSScriptRoot 'verify_render.py'
 $reviewScript = Join-Path $PSScriptRoot 'private_visual_review.py'
@@ -148,7 +149,14 @@ try {
         '-t', "$seconds", '-movflags', '+faststart', $muxed
     )
     if (-not (Test-Path -LiteralPath $muxed -PathType Leaf)) { throw 'FFmpeg did not create the muxed MP4.' }
-    Move-Item -LiteralPath $muxed -Destination $final -ErrorAction Stop
+    if ($isWindowsHost) {
+        # Copy rather than move: same-volume NTFS moves can retain staging ACLs.
+        # The new destination file inherits the explicitly private directory ACL.
+        Copy-Item -LiteralPath $muxed -Destination $final -ErrorAction Stop
+        Assert-PrivateWindowsAcl -Path $final -AllowInheritedChild
+    } else {
+        Move-Item -LiteralPath $muxed -Destination $final -ErrorAction Stop
+    }
     Invoke-Python -Parameters @($verifyScript, $final, '--seconds', "$seconds")
     Invoke-Python -Parameters @($reviewScript, $final, '--seconds', "$seconds", '--out-root', $outputFull)
     Write-Output "LOCAL_VIDEO: $final"

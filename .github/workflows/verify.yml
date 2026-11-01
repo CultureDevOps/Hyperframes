@@ -55,6 +55,29 @@ jobs:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
         run: npx --no-install hyperframes lint
 
+  test-windows-local:
+    name: Native Windows PowerShell and NTFS (no media)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: windows-2022
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (verified 2026-11-01)
+      - name: Windows PowerShell 5.1 plan-only checks
+        shell: powershell
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 5) { throw 'Expected Windows PowerShell 5.1' }
+          .\scripts\render_and_review.ps1 -Composition intro -PlanOnly
+          .\scripts\render_and_review.ps1 -Composition mvc -PlanOnly
+      - name: Windows NTFS privacy and regression tests (isolated temp only)
+        shell: powershell
+        run: .\tests\test_windows_acl.ps1
+      - name: PowerShell 7 compatibility plan-only
+        shell: pwsh
+        run: .\scripts\render_and_review.ps1 -Composition nounours -PlanOnly
+
   smoke-intro:
     name: Ephemeral intro smoke (no upload)
     if: github.event_name == 'pull_request'

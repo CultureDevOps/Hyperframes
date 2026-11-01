@@ -253,3 +253,38 @@ are cleaned up before discarding the runner. This does not substitute for a
 human local review on Windows and does not remove the known FFmpeg security
 debt described above. No new runner, package subscription, production deploy,
 video publication or merge is authorized by this step.
+
+## Windows NTFS private output and native Windows CI (OPS-010)
+
+The PowerShell local renderer now **fails closed** when a Windows output
+directory has inherited/broad ACLs. When creating a *new* leaf folder on a
+fixed local NTFS volume, \`scripts/private_output_acl.ps1\` disables
+inheritance and grants FullControl only to the current Windows user and
+the SYSTEM service SID. It re-reads and checks the ACL before rendering.
+An **existing** directory is validated, never silently modified. A folder
+with an Everyone/Users ACE, unprotected inheritance, a reparse-point
+(junction/symlink) ancestor, a UNC path or a non-fixed/non-NTFS volume is
+rejected. The parent directory must already exist.
+
+For example, choose a brand-new child of an existing private local folder:
+
+\`\`\`powershell
+.\scripts\render_and_review.ps1 -Composition mvc -OutputDirectory "$HOME\Hyperframes-Review-Private"
+\`\`\`
+
+Windows local output uses **Copy-Item** (not same-volume Move-Item) from
+the staging directory, so the final MP4 inherits destination NTFS permissions;
+it then checks the copied MP4 ACL. Linux retains its existing move path.
+Untrusted existing folders need a *new* private output path rather than
+automatic ACL weakening/rewriting. Admins or the filesystem owner may still
+be capable of changing permissions, and NTFS ACLs are **not encryption**.
+Do not use shared or cloud-synced locations. No media is sent to GitHub.
+
+PR CI runs **native Windows PowerShell 5.1 and PowerShell 7** on a disposable
+Windows GitHub-hosted runner, with only \`-PlanOnly\` and an ACL regression
+test in a freshly created temporary directory. That job verifies restricted
+directory and child-file permissions, rejects a synthetic overly permissive
+directory without mutating it, and rejects UNC paths. It **does not run a
+real media render on Windows**, install local FFmpeg or access the user's PC.
+The previously validated full PowerShell media render remains on an ephemeral
+Linux runner.

@@ -1,0 +1,100 @@
+#requires -Version 5.1
+<#
+  OPS-010: fail-closed private NTFS directory ACL for local rendering.
+  Only called on Windows; never relax an existing directory's ACL.
+  Local fixed-volume NTFS only. No network share or publishing.
+#>
+Set-StrictMode -Version Latest
+
+function Assert-PrivateWindowsAcl {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Path,
+        [switch]$AllowInheritedChild
+    )
+    $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $systemSid = 'S-1-5-18'
+    $allowedSids = @($currentSid, $systemSid)
+    $acl = Get-Acl -LiteralPath $Path -ErrorAction Stop
+    if (-not $AllowInheritedChild -and -not $acl.AreAccessRulesProtected) {
+        throw "NTFS_UNSAFE: inherited ACLs on '$Path'. Use a fresh private directory; existing ACLs will NOT be modified."
+    }
+    $currentHasFullControl = $false
+    foreach ($rule in $acl.Access) {
+        $sid = $rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+        if ($sid -notin $allowedSids -or
+            $rule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) {
+            throw "NTFS_UNSAFE: unapproved ACE ($sid) on '$Path'. Existing ACLs are not modified."
+        }
+        if ($sid -eq $currentSid -and
+            (($rule.FileSystemRights -band [System.Security.AccessControl.FileSystemRights]::FullControl) -eq
+                [System.Security.AccessControl.FileSystemRights]::FullControl)) {
+            $currentHasFullControl = $true
+        }
+    }
+    if (-not $currentHasFullControl) { throw "NTFS_UNSAFE: current user lacks full control on '$Path'." }
+}
+
+function Initialize-PrivateWindowsDirectory {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Path)
+
+    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+        throw 'NTFS ACL configuration can only run on Windows.'
+    }
+    $full = [IO.Path]::GetFullPath($Path)
+    if ($full.StartsWith('\\')) {
+        throw 'NTFS_UNSAFE: UNC/device paths are not allowed for private media.'
+    }
+    $root = [IO.Path]::GetPathRoot($full)
+    $drive = New-Object System.IO.DriveInfo($root)
+    if ($drive.DriveType -ne [IO.DriveType]::Fixed -or $drive.DriveFormat -ne 'NTFS') {
+        throw "NTFS_UNSAFE: output must be on a fixed local NTFS volume ($root)."
+    }
+
+    # Reject existing reparse-point ancestors (junctions, symlinks, cloud redirections).
+    $cursor = $full
+    while ($cursor) {
+        if (Test-Path -LiteralPath $cursor) {
+            $item = Get-Item -LiteralPath $cursor -Force
+            if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "NTFS_UNSAFE: reparse point in output path '$cursor'."
+            }
+        }
+        $parent = Split-Path -Path $cursor -Parent
+        if (-not $parent -or $parent -eq $cursor) { break }
+        $cursor = $parent
+    }
+
+    if (Test-Path -LiteralPath $full) {
+        if (-not (Test-Path -LiteralPath $full -PathType Container)) {
+            throw "NTFS_UNSAFE: output is not a directory: $full"
+        }
+        Assert-PrivateWindowsAcl -Path $full
+        return $full
+    }
+    $parentDir = Split-Path -Path $full -Parent
+    if (-not (Test-Path -LiteralPath $parentDir -PathType Container)) {
+        throw "NTFS_UNSAFE: parent must already exist: $parentDir"
+    }
+    # Create only the requested leaf directory; do not modify parent ACLs.
+    $null = New-Item -ItemType Directory -Path $full -ErrorAction Stop
+    $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+    $systemSid = New-Object System.Security.Principal.SecurityIdentifier('S-1-5-18')
+    $acl = Get-Acl -LiteralPath $full -ErrorAction Stop
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($sid in @($currentSid, $systemSid)) {
+        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $sid,
+            [System.Security.AccessControl.FileSystemRights]::FullControl,
+            ([System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor
+             [System.Security.AccessControl.InheritanceFlags]::ObjectInherit),
+            [System.Security.AccessControl.PropagationFlags]::None,
+            [System.Security.AccessControl.AccessControlType]::Allow
+        )
+        $acl.AddAccessRule($rule)
+    }
+    Set-Acl -LiteralPath $full -AclObject $acl -ErrorAction Stop
+    Assert-PrivateWindowsAcl -Path $full
+    return $full
+}

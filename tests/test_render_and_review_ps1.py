@@ -27,7 +27,10 @@ class PowerShellLocalReviewTests(unittest.TestCase):
         content = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("GetFullPath($OutputDirectory)", content)
         self.assertIn("StartsWith($repoPrefix", content)
+        self.assertIn("Copy-Item -LiteralPath $muxed -Destination $final", content)
         self.assertIn("Move-Item -LiteralPath $muxed -Destination $final", content)
+        self.assertIn("Initialize-PrivateWindowsDirectory -Path $outputFull", content)
+        self.assertIn("Assert-PrivateWindowsAcl -Path $final -AllowInheritedChild", content)
         self.assertIn("Remove-Item -LiteralPath $temporary -Force", content)
         self.assertIn("private_visual_review.py", content)
         self.assertIn("verify_render.py", content)
@@ -38,11 +41,24 @@ class PowerShellLocalReviewTests(unittest.TestCase):
         self.assertNotRegex(content, r"(?i)(?:upload-artifact|invoke-restmethod|invoke-webrequest|start-bitstransfer|github\.com/api|curl(?:\.exe)?\s)")
         self.assertNotIn("Publish-", content)
 
+    def test_ntfs_fail_closed_guards_are_present(self):
+        content = (ROOT / "scripts/private_output_acl.ps1").read_text(encoding="utf-8")
+        self.assertIn("SetAccessRuleProtection($true, $false)", content)
+        self.assertIn("S-1-5-18", content)
+        self.assertIn("Assert-PrivateWindowsAcl", content)
+        self.assertIn("DriveType", content)
+        self.assertIn("ReparsePoint", content)
+        self.assertIn("NTFS_UNSAFE", content)
+        self.assertNotIn("icacls /grant Everyone", content)
+        self.assertNotIn("Invoke-RestMethod", content)
+
     def test_pr_ci_exercises_power_shell_no_media_artifacts(self):
         workflow = CI.read_text(encoding="utf-8")
         self.assertIn("scripts/render_and_review.ps1", workflow)
         self.assertIn("-Composition intro -SkipInstall", workflow)
         self.assertIn("-Composition mvc -PlanOnly", workflow)
+        self.assertIn("test-windows-local:", workflow)
+        self.assertIn("tests/test_windows_acl.ps1", workflow)
         self.assertNotIn("upload-artifact", workflow)
         self.assertNotIn("upload_artifact", workflow)
 
