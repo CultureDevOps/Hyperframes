@@ -39,8 +39,10 @@ def validate(policy, *, root=ROOT, today=None):
             errors.append(f"{name} cannot be read: {exc}")
             continue
         pins = re.findall(r"(?m)^\s*sudo apt-get install -y ffmpeg=([^\s#]+)", text)
-        if pins != [version]:
-            errors.append(f"{name} uses FFmpeg {pins!r}; policy expects exactly {version!r}")
+        # The PR validation workflow has two independent smoke jobs, each with a pin.
+        required_count = 2 if name == "verify.yml" else 1
+        if pins != [version] * required_count:
+            errors.append(f"{name} uses FFmpeg {pins!r}; policy expects {required_count} pin(s) to {version!r}")
 
     try:
         tool = (root / "scripts" / "check_toolchain.py").read_text()
