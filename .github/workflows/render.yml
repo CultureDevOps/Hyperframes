@@ -6,6 +6,7 @@ on:
     paths:
       - 'compositions/culturedevops/intro/**'
       - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/render.yml'
 permissions:
   contents: read
@@ -23,7 +24,7 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Check HyperFrames CLI
         run: npx --no-install hyperframes --help
       - name: Render

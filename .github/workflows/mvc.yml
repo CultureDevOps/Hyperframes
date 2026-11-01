@@ -6,6 +6,8 @@ on:
     paths:
       - 'compositions/culturedevops/mvc/**'
       - 'scripts/generate_mvc_soundtrack.py'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/mvc.yml'
 permissions:
   contents: read
@@ -23,7 +25,7 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install HyperFrames
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Render MVC explainer
         working-directory: compositions/culturedevops/mvc
         run: npx --no-install hyperframes render --output renders/mvc-explainer.mp4 --fps 30 --quality high

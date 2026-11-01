@@ -6,6 +6,8 @@ on:
     paths:
       - 'compositions/culturedevops/nounours/**'
       - 'scripts/generate_teddy_soundtrack.py'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/nounours.yml'
 permissions:
   contents: read
@@ -23,7 +25,7 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install HyperFrames
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Render animated teddy
         working-directory: compositions/culturedevops/nounours
         run: npx --no-install hyperframes render --output renders/nounours-antoine-dany.mp4 --fps 30 --quality high
