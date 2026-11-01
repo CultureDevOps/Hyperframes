@@ -187,3 +187,11 @@ must be independently verified, not inferred from this manifest.
 
 See [ffmpeg-candidates.md](ffmpeg-candidates.md) for free source options,
 unresolved CVE caveats and no-install Ubuntu 24.04/26.04 APT probes.
+
+## Debian 13 security triage and OCI digest probe
+
+See [debian-trixie-risk-review.md](debian-trixie-risk-review.md) and
+[`debian-trixie-image-lock.json`](debian-trixie-image-lock.json).
+The PR-only Debian job checks official amd64 image digest and live APT
+candidate **without installing FFmpeg or rendering media**. Debian's
+remaining CVEs are not considered resolved by a pinned container.
