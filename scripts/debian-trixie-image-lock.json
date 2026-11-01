@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "publisher": "docker.io/library/debian",
+  "release": "trixie",
+  "architecture": "amd64",
+  "reference_date": "2026-10-27",
+  "digest": "sha256:e2914ec98e08b24b4cee3cefcb9f90dfb5519f8d215a2ccf0c9a49b10b6e43de",
+  "source": "https://docker.debian.net/",
+  "official_registry_page": "https://hub.docker.com/_/debian",
+  "security_status": "NOT_ASSESSED",
+  "mode": "Read-only rootfs, tmpfs /tmp and APT caches, cap-drop ALL + SETUID/SETGID/CHOWN/FOWNER/DAC_OVERRIDE for APT sandbox, no Docker socket mount, no FFmpeg install",
+  "known_risk": "Image digest locks root filesystem only; live APT indexes and candidate FFmpeg are not pinned, image base is not a signature"
+}
