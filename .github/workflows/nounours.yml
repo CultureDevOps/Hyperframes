@@ -31,14 +31,8 @@ jobs:
           python3 ../../../scripts/generate_teddy_soundtrack.py soundtrack.wav
           ffmpeg -y -i renders/nounours-antoine-dany.mp4 -i soundtrack.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -t 10 -movflags +faststart renders/nounours-with-sound.mp4
           mv renders/nounours-with-sound.mp4 renders/nounours-antoine-dany.mp4
-      - name: Verify landscape and sound
-        working-directory: compositions/culturedevops/nounours
-        run: |
-          test -s renders/nounours-antoine-dany.mp4
-          resolution="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 renders/nounours-antoine-dany.mp4)"
-          echo "Resolution: $resolution"
-          test "$resolution" = "1920x1080"
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 renders/nounours-antoine-dany.mp4 | grep -q 'codec_name=aac'
+      - name: Verify MP4 metadata
+        run: python3 scripts/verify_render.py compositions/culturedevops/nounours/renders/nounours-antoine-dany.mp4 --seconds 10
       - name: Upload teddy video
         uses: actions/upload-artifact@v4
         with:

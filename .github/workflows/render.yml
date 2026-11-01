@@ -35,14 +35,8 @@ jobs:
             -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k \
             -t 10 -movflags +faststart renders/culturedevops-with-sound.mp4
           mv renders/culturedevops-with-sound.mp4 renders/culturedevops-intro.mp4
-      - name: Verify video is landscape Full HD
-        working-directory: compositions/culturedevops/intro
-        run: |
-          test -s renders/culturedevops-intro.mp4
-          resolution="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 renders/culturedevops-intro.mp4)"
-          echo "Video resolution: $resolution"
-          test "$resolution" = "1920x1080"
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 renders/culturedevops-intro.mp4 | grep -q "codec_name=aac"
+      - name: Verify MP4 metadata
+        run: python3 scripts/verify_render.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10
       - name: Upload rendered output and diagnostics
         if: success()
         uses: actions/upload-artifact@v4

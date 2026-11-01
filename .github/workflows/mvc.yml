@@ -31,14 +31,8 @@ jobs:
           python3 ../../../scripts/generate_mvc_soundtrack.py soundtrack.wav
           ffmpeg -y -i renders/mvc-explainer.mp4 -i soundtrack.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -t 35 -movflags +faststart renders/mvc-with-sound.mp4
           mv renders/mvc-with-sound.mp4 renders/mvc-explainer.mp4
-      - name: Verify full HD, duration and sound
-        working-directory: compositions/culturedevops/mvc
-        run: |
-          test -s renders/mvc-explainer.mp4
-          resolution="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 renders/mvc-explainer.mp4)"
-          echo "Resolution: $resolution"
-          test "$resolution" = "1920x1080"
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 renders/mvc-explainer.mp4 | grep -q 'codec_name=aac'
+      - name: Verify MP4 metadata
+        run: python3 scripts/verify_render.py compositions/culturedevops/mvc/renders/mvc-explainer.mp4 --seconds 35
       - name: Upload MVC video
         uses: actions/upload-artifact@v4
         with:
