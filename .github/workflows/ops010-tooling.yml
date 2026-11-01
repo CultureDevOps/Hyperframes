@@ -1,0 +1,26 @@
+name: OPS-010 — Offline render contract and private review tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/verify_render.py'
+      - 'scripts/private_visual_review.py'
+      - 'tests/test_verify_render.py'
+      - 'tests/test_private_visual_review.py'
+      - '.github/workflows/ops010-tooling.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-offline:
+    name: Python unit tests (no render or upload)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # reviewed 2026-11-01
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # reviewed 2026-11-01
+        with:
+          python-version: '3.12'
+      - name: Render metadata contract (offline)
+        run: python -m unittest discover -s tests -p test_verify_render.py -v
+      - name: Private storyboard directory rules (offline)
+        run: python -m unittest discover -s tests -p test_private_visual_review.py -v
