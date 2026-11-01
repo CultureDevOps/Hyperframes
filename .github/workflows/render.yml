@@ -1,12 +1,6 @@
 name: Render Culture DevOps intro
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'compositions/culturedevops/intro/**'
-      - 'package.json'
-      - '.github/workflows/render.yml'
 permissions:
   contents: read
 jobs:
@@ -14,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
       - name: Install FFmpeg
@@ -43,13 +37,3 @@ jobs:
           echo "Video resolution: $resolution"
           test "$resolution" = "1920x1080"
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 renders/culturedevops-intro.mp4 | grep -q "codec_name=aac"
-      - name: Upload rendered output and diagnostics
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: culturedevops-render
-          path: |
-            compositions/culturedevops/intro/**/*.mp4
-            compositions/culturedevops/intro/*.mp4
-            renders/**/*.mp4
-          if-no-files-found: error

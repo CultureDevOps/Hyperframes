@@ -1,12 +1,6 @@
 name: Render Culture DevOps MVC explainer
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'compositions/culturedevops/mvc/**'
-      - 'scripts/generate_mvc_soundtrack.py'
-      - '.github/workflows/mvc.yml'
 permissions:
   contents: read
 jobs:
@@ -14,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
       - name: Install FFmpeg
@@ -39,9 +33,3 @@ jobs:
           echo "Resolution: $resolution"
           test "$resolution" = "1920x1080"
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 renders/mvc-explainer.mp4 | grep -q 'codec_name=aac'
-      - name: Upload MVC video
-        uses: actions/upload-artifact@v4
-        with:
-          name: culturedevops-mvc-explainer
-          path: compositions/culturedevops/mvc/renders/mvc-explainer.mp4
-          if-no-files-found: error
