@@ -150,10 +150,9 @@ try {
     )
     if (-not (Test-Path -LiteralPath $muxed -PathType Leaf)) { throw 'FFmpeg did not create the muxed MP4.' }
     if ($isWindowsHost) {
-        # Copy rather than move: same-volume NTFS moves can retain staging ACLs.
-        # The new destination file inherits the explicitly private directory ACL.
-        Copy-Item -LiteralPath $muxed -Destination $final -ErrorAction Stop
-        Assert-PrivateWindowsAcl -Path $final -AllowInheritedChild
+        # Stage inside private NTFS, verify hash + ACL and atomically rename.
+        # No existing final or partial copy may survive a failed publish attempt.
+        $null = Copy-PrivateWindowsMedia -Source $muxed -Destination $final
     } else {
         Move-Item -LiteralPath $muxed -Destination $final -ErrorAction Stop
     }

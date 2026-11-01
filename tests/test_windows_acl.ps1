@@ -22,6 +22,53 @@ try {
     Assert-PrivateWindowsAcl -Path $file -AllowInheritedChild
     $null = Initialize-PrivateWindowsDirectory -Path $private
 
+    # No real video: a fake .mp4 verifies byte integrity, NTFS destination
+    # inheritance, no-overwrite, and failed-copy cleanup on hosted Windows.
+    $source = Join-Path $testRoot 'fake-mp4-source.mp4'
+    $bytes = [byte[]](1,2,3,7,13,21,34,55,89)
+    [IO.File]::WriteAllBytes($source, $bytes)
+    $final = Join-Path $private 'fake-final.mp4'
+    $result = Copy-PrivateWindowsMedia -Source $source -Destination $final
+    if ($result -ne $final) { throw 'Unexpected final media destination.' }
+    Assert-PrivateWindowsAcl -Path $final -AllowInheritedChild
+    $expected = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+    if ((Get-FileHash -LiteralPath $final -Algorithm SHA256).Hash -ne $expected) {
+        throw 'Copied media bytes differ.'
+    }
+    if (@(Get-ChildItem -LiteralPath $private -Filter '*.partial').Count -ne 0) {
+        throw 'Partial copy remained after successful promotion.'
+    }
+    # The final file must never be silently overwritten or deleted.
+    $rejectedExisting = $false
+    try { $null = Copy-PrivateWindowsMedia -Source $source -Destination $final }
+    catch { if ($_.Exception.Message -like '*NTFS_UNSAFE*') { $rejectedExisting = $true } else { throw } }
+    if (-not $rejectedExisting) { throw 'Existing final was overwritten.' }
+    if ((Get-FileHash -LiteralPath $final -Algorithm SHA256).Hash -ne $expected) {
+        throw 'Existing final changed after failed copy.'
+    }
+    # Wrong expected digest forces a failure AFTER the temporary file is copied.
+    $mismatch = Join-Path $private 'failed-hash.mp4'
+    $rejectedHash = $false
+    try {
+        $null = Copy-PrivateWindowsMedia -Source $source -Destination $mismatch -ExpectedSha256 ('0' * 64)
+    } catch {
+        if ($_.Exception.Message -like '*NTFS_UNSAFE*') { $rejectedHash = $true } else { throw }
+    }
+    if (-not $rejectedHash) { throw 'Expected SHA256 mismatch was accepted.' }
+    if (Test-Path -LiteralPath $mismatch) { throw 'Failed hash copy left final media.' }
+    if (@(Get-ChildItem -LiteralPath $private -Filter '*.partial').Count -ne 0) {
+        throw 'Failed hash copy left private partial files.'
+    }
+    # Missing source must fail before touching the target directory.
+    $missing = Join-Path $testRoot 'missing-source.mp4'
+    $missingTarget = Join-Path $private 'missing-target.mp4'
+    $rejectedMissing = $false
+    try { $null = Copy-PrivateWindowsMedia -Source $missing -Destination $missingTarget }
+    catch { if ($_.Exception.Message -like '*NTFS_UNSAFE*') { $rejectedMissing = $true } else { throw } }
+    if (-not $rejectedMissing -or (Test-Path -LiteralPath $missingTarget)) {
+        throw 'Missing source did not fail cleanly.'
+    }
+
     # An existing folder with explicit Everyone read must fail, without rewriting it.
     $permissive = Join-Path $testRoot 'permissive'
     $null = New-Item -ItemType Directory -Path $permissive
@@ -55,12 +102,19 @@ try {
     $stillWorld = @((Get-Acl -LiteralPath $permissive).Access |
         ForEach-Object { $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value }) -contains 'S-1-1-0'
     if (-not $stillWorld) { throw 'Existing insecure directory ACL was mutated.' }
+    $permissiveTarget = Join-Path $permissive 'should-not-exist.mp4'
+    $rejectedPermissiveCopy = $false
+    try { $null = Copy-PrivateWindowsMedia -Source $source -Destination $permissiveTarget }
+    catch { if ($_.Exception.Message -like '*NTFS_UNSAFE*') { $rejectedPermissiveCopy = $true } else { throw } }
+    if (-not $rejectedPermissiveCopy -or (Test-Path -LiteralPath $permissiveTarget)) {
+        throw 'Copy wrote into an insecure existing directory.'
+    }
 
     $uncRejected = $false
     try { $null = Initialize-PrivateWindowsDirectory -Path '\\example.invalid\share\media' }
     catch { if ($_.Exception.Message -like '*NTFS_UNSAFE*') { $uncRejected = $true } else { throw } }
     if (-not $uncRejected) { throw 'UNC path was accepted.' }
-    Write-Output 'WINDOWS_NTFS_ACL_TESTS_OK: private directory + inherited file + fail closed + UNC rejection'
+    Write-Output 'WINDOWS_NTFS_ACL_TESTS_OK: private directory + fake media copy/hash + no overwrite + failed cleanup + fail closed + UNC rejection'
 }
 finally {
     # Only remove isolated, freshly created data on the disposable GitHub runner.

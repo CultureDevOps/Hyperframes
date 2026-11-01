@@ -288,3 +288,26 @@ directory without mutating it, and rejects UNC paths. It **does not run a
 real media render on Windows**, install local FFmpeg or access the user's PC.
 The previously validated full PowerShell media render remains on an ephemeral
 Linux runner.
+
+
+## Windows private final-file copy: integrity and failure cleanup (OPS-010)
+
+The native Windows path uses \`Copy-PrivateWindowsMedia\` from
+\`scripts/private_output_acl.ps1\` rather than copying directly into the
+final filename. It validates the **destination directory NTFS ACL**, copies
+the raw final MP4 to a randomized \`.partial\` name *inside that private
+directory*, checks inherited ACLs and compares source/partial **SHA-256**.
+An optional \`-ExpectedSha256\` parameter can enforce an independently
+supplied 64-character digest. Only after checks succeed does a no-overwrite
+\`[IO.File]::Move\` rename the partial file inside the same private directory.
+A pre-existing destination fails closed; source files and existing final
+files are never deleted or overwritten by this helper. Partial files are
+removed on errors, including checksum failures.
+
+The Windows CI test in \`tests/test_windows_acl.ps1\` writes only **synthetic
+bytes with a .mp4 extension** (not a real video), then proves SHA-256
+equality, ACL inheritance, no overwrite, missing-input rejection, refusal
+to use a permissive existing directory, and cleanup of checksum-rejected
+partial copies. The test uses disposable hosted Windows runner storage
+only. It neither renders nor uploads a video, and has no access to your PC.
+Full video rendering remains tested on Linux PowerShell, not native Windows.

@@ -104,3 +104,67 @@ function Initialize-PrivateWindowsDirectory {
     Assert-PrivateWindowsAcl -Path $full
     return $full
 }
+
+function Copy-PrivateWindowsMedia {
+    <#
+      Copy a local file into a protected NTFS folder with a disposable file in
+      the destination folder. Only after SHA-256 and ACL verification is it
+      atomically renamed to its final filename. A pre-existing final is NEVER
+      overwritten or removed, even when a copy/check fails.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Source,
+        [Parameter(Mandatory=$true)][string]$Destination,
+        [ValidatePattern('^[0-9a-fA-F]{64}$')][string]$ExpectedSha256 = ''
+    )
+    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+        throw 'NTFS_UNSAFE: private media copy requires Windows.'
+    }
+    $sourceFull = [IO.Path]::GetFullPath($Source)
+    $finalFull = [IO.Path]::GetFullPath($Destination)
+    if (-not (Test-Path -LiteralPath $sourceFull -PathType Leaf)) {
+        throw "NTFS_UNSAFE: source is absent or not a file: $sourceFull"
+    }
+    $sourceItem = Get-Item -LiteralPath $sourceFull -Force
+    if (($sourceItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw 'NTFS_UNSAFE: source cannot be a reparse point.'
+    }
+    $destinationDir = Split-Path -Path $finalFull -Parent
+    $null = Initialize-PrivateWindowsDirectory -Path $destinationDir
+    if (Test-Path -LiteralPath $finalFull) {
+        throw "NTFS_UNSAFE: final destination already exists; never overwrite: $finalFull"
+    }
+    $stage = Join-Path $destinationDir ('.ops010-copy-' + [Guid]::NewGuid().ToString('N') + '.partial')
+    $published = $false
+    try {
+        # Copy INSIDE the private directory; the partial file inherits private
+        # ACLs, rather than retaining the permissions of the raw render.
+        [IO.File]::Copy($sourceFull, $stage, $false)
+        Assert-PrivateWindowsAcl -Path $stage -AllowInheritedChild
+
+        $sourceHash = (Get-FileHash -LiteralPath $sourceFull -Algorithm SHA256 -ErrorAction Stop).Hash
+        $stageHash = (Get-FileHash -LiteralPath $stage -Algorithm SHA256 -ErrorAction Stop).Hash
+        if ($sourceHash -ne $stageHash) {
+            throw 'NTFS_UNSAFE: copied bytes differ from source SHA256.'
+        }
+        if ($ExpectedSha256 -and $stageHash -ne $ExpectedSha256.ToUpperInvariant()) {
+            throw 'NTFS_UNSAFE: copied bytes differ from expected SHA256.'
+        }
+        # File.Move (without overwrite) fails if another writer creates the
+        # final path after the pre-check. Preserve that pre-existing file.
+        [IO.File]::Move($stage, $finalFull)
+        $published = $true
+        Assert-PrivateWindowsAcl -Path $finalFull -AllowInheritedChild
+        return $finalFull
+    } catch {
+        if ($published -and [IO.File]::Exists($finalFull)) {
+            Remove-Item -LiteralPath $finalFull -Force -ErrorAction Stop
+        }
+        throw
+    } finally {
+        if ([IO.File]::Exists($stage)) {
+            Remove-Item -LiteralPath $stage -Force -ErrorAction Stop
+        }
+    }
+}
