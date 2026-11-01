@@ -22,7 +22,7 @@ class WorkflowSafetyTests(unittest.TestCase):
         for name in RENDERS:
             with self.subTest(name=name):
                 contents = (ROOT / ".github" / "workflows" / name).read_text()
-                self.assertEqual(contents.count("uses: actions/upload-artifact@v4"), 1)
+                self.assertEqual(len(re.findall(r"uses: actions/upload-artifact@[0-9a-f]{40}", contents)), 1)
                 self.assertEqual(contents.count("if: ${{ inputs.upload_artifact == true }}"), 1)
                 self.assertNotIn("**/*.mp4", contents)
                 self.assertIn("retention-days: 3", contents)

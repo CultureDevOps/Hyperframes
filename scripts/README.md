@@ -65,3 +65,18 @@ Runner image/library patches, browser download integrity, fonts and GitHub
 Actions tag refs remain changeable. This lot checks for version drift but does
 not establish bit-identical output. It avoids Docker/privileged runners,
 retains only logs (no PR video uploads), and does not deploy or publish video.
+
+## Immutable GitHub Actions pins
+
+All `actions/checkout`, `actions/setup-node`, `actions/setup-python` and
+`actions/upload-artifact` invocations use complete, immutable **40-hex commit SHAs**,
+rather than movable `@v4` or `@v5` aliases. Their exact SHA values were
+checked on **2026-11-01** against the official `actions/*` repositories via
+GitHub's tag-ref API; `scripts/actions-lock.json` records the major aliases and
+resolved commit identifiers. `tests/test_actions_pins.py` rejects unapproved
+or floating `uses:` references across all workflows.
+
+When updating, review the upstream action release, resolve its new official
+commit SHA, update both the YAML uses and manifest, and rerun tests/CI. This
+locks action source revisions; it does **not** lock GitHub runner images, installed
+system packages or browser download hashes, nor prove action-code safety.
