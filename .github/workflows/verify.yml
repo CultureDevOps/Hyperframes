@@ -8,6 +8,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'compositions/culturedevops/intro/**'
+      - 'compositions/culturedevops/mvc/**'
+      - 'compositions/culturedevops/nounours/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +37,18 @@ jobs:
           npx --no-install hyperframes --help > /dev/null
       - name: Lint intro composition (required; no render)
         working-directory: compositions/culturedevops/intro
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: '1'
+        run: npx --no-install hyperframes lint
+      - name: Diagnose MVC lint without rendering
+        working-directory: compositions/culturedevops/mvc
+        continue-on-error: true
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: '1'
+        run: npx --no-install hyperframes lint
+      - name: Diagnose Nounours lint without rendering
+        working-directory: compositions/culturedevops/nounours
+        continue-on-error: true
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
         run: npx --no-install hyperframes lint
