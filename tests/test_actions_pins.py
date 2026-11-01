@@ -26,7 +26,7 @@ class ActionPinsTests(unittest.TestCase):
         for path in sorted((ROOT / ".github/workflows").glob("*.yml")):
             content = path.read_text()
             matches = re.findall(
-                r"(?m)^\s*-\s+uses:\s+([\w.-]+/[\w.-]+)@([^\s#]+)", content
+                r"(?m)^\s*(?:-\s+)?uses:\s+([\w.-]+/[\w.-]+)@([^\s#]+)", content
             )
             self.assertGreater(len(matches), 0, path.name)
             for name, ref in matches:
