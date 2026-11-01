@@ -8,6 +8,6 @@
     "doctor": "hyperframes doctor"
   },
   "devDependencies": {
-    "hyperframes": "latest"
+    "hyperframes": "0.8.221"
   }
 }

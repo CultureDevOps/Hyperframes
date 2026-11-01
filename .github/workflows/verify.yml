@@ -5,6 +5,8 @@ on:
       - '.github/workflows/**'
       - 'scripts/**'
       - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,3 +21,21 @@ jobs:
           python-version: '3.12'
       - name: Test render metadata checks and workflow boundaries
         run: python -m unittest discover -s tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bootstrap immutable dependency lockfile (metadata only)
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          raw = Path("package-lock.json").read_text()
+          lock = json.loads(raw)
+          assert lock["packages"][""]["devDependencies"]["hyperframes"] == "0.8.221"
+          assert lock["packages"]["node_modules/hyperframes"]["version"] == "0.8.221"
+          print("OPS010_LOCK_BEGIN")
+          for line in raw.splitlines():
+              print("OPS010_LOCK_LINE:" + line)
+          print("OPS010_LOCK_END")
+          PY
