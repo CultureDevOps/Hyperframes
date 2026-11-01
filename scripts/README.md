@@ -182,3 +182,8 @@ For each security review or new Ubuntu USN:
 This two-track process preserves a known reproducible CI baseline while
 making security debt visible, dated and mandatory to revisit. A new version
 must be independently verified, not inferred from this manifest.
+
+## Vendor-supported FFmpeg alternatives (OPS-010)
+
+See [ffmpeg-candidates.md](ffmpeg-candidates.md) for free source options,
+unresolved CVE caveats and no-install Ubuntu 24.04/26.04 APT probes.
