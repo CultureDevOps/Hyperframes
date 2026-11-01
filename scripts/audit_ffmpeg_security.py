@@ -51,11 +51,11 @@ def validate(policy, *, root=ROOT, today=None):
             errors.append(f"{name} must remain manually triggered")
         if "upload-artifact" in text or "upload_artifact" in text:
             errors.append(f"{name} would upload media")
-        if not re.search(r"(?m)^\\s*run: sudo apt-get update && sudo apt-get install -y ffmpeg\\s*$", text) and not re.search(
-            r"(?m)^\\s*sudo apt-get install -y ffmpeg\\s*$", text
+        if not re.search(r"(?m)^\s*run: sudo apt-get update && sudo apt-get install -y ffmpeg\s*$", text) and not re.search(
+            r"(?m)^\s*sudo apt-get install -y ffmpeg\s*$", text
         ):
             errors.append(f"{name} FFmpeg install changed: inspect runtime and update policy")
-        if re.search(r"(?m)^\\s*sudo apt-get install -y ffmpeg=", text):
+        if re.search(r"(?m)^\s*sudo apt-get install -y ffmpeg=", text):
             errors.append(f"{name} pins FFmpeg unexpectedly; treat as separate baseline migration")
 
     try:
