@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "ubuntu_release": "24.04",
+  "apt_package": "7:6.1.1-3ubuntu5",
+  "ffmpeg_binary": "6.1.1-3ubuntu5",
+  "security_status": "known_gap_unresolved",
+  "reviewed_on": "2026-11-01",
+  "next_review_due": "2026-11-15",
+  "known_security_notice": {
+    "id": "USN-8915-1",
+    "published_on": "2026-10-12",
+    "url": "https://ubuntu.com/security/notices/USN-8915-1",
+    "fixed_apt_package": "7:6.1.1-3ubuntu5+esm15",
+    "distribution": "Ubuntu Pro / ESM Apps",
+    "availability": "Not verified on GitHub-hosted runners; no Pro activation authorized"
+  },
+  "decision": "Keep reproducible CI pinned for now and expose the known security gap. A new baseline requires reviewing Ubuntu USNs, verifying repo/license eligibility without spending or enabling Pro, updating all workflow pins and FFmpeg_BINARY, then rerunning 3 ephemeral smoke tests before any merge."
+}

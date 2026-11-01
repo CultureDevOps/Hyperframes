@@ -47,9 +47,9 @@ The shared `ffprobe` check requires nonempty MP4 output with 1920x1080 video,
 30 fps (+/- 0.05), AAC audio and the intended 10s or 35s duration (+/- 0.25s).
 Failures identify the violated contract.
 
-Remaining work: manually review visual pacing using an approved non-publication method,
-consider digest-pinning GitHub Actions and an FFmpeg/Chrome distribution strategy,
-and review artifact retention. No byte-for-byte video reproducibility is claimed.
+Remaining work: complete private local visual review, evaluate the FFmpeg
+security-remediation options described below, and review artifact retention.
+GitHub Actions are already SHA pinned. No byte-for-byte video reproducibility is claimed.
 
 ## CSS-only timeline declaration
 
@@ -61,8 +61,8 @@ The required CI lint will fail if either issue returns.
 
 ## Remaining reproducibility caveats
 
-Runner image/library patches, browser download integrity, fonts and GitHub
-Actions tag refs remain changeable. This lot checks for version drift but does
+Runner image/library patches, browser download integrity and fonts
+remain changeable. GitHub Actions are pinned to full commit SHAs. This lot checks for version drift but does
 not establish bit-identical output. It avoids Docker/privileged runners,
 retains only logs (no PR video uploads), and does not deploy or publish video.
 
@@ -134,3 +134,51 @@ auditable *observed fingerprints*, **not** vendor-signed or independently
 trusted digests. Do not promote them into trust anchors without reviewing
 the archive origin and binary signing/integrity evidence. No automatic browser
 upgrade, binary replacement or new paid resource is performed.
+
+## FFmpeg security review (manual changes, CI-controlled)
+
+**Security notice, reviewed 2026-11-01:** Ubuntu
+[USN-8915-1](https://ubuntu.com/security/notices/USN-8915-1), published
+2026-10-12, lists Ubuntu 24.04's fixed `ffmpeg` package
+`7:6.1.1-3ubuntu5+esm15` via **Ubuntu Pro ESM Apps**. Our reproducible
+baseline `7:6.1.1-3ubuntu5` predates that fix. Successful render, a
+known package version and an executable SHA256 do **not** mean the baseline
+is free of known vulnerabilities. We have not verified any ESM entitlement,
+activated Ubuntu Pro or installed a new package. The current security gap
+is **unresolved**; do not merge or ship this baseline as a "secure" build.
+
+The small `scripts/ffmpeg-security-policy.json` records the explicitly
+known advisory, fixed version, status, review date and **next review due
+2026-11-15**. `python3 scripts/audit_ffmpeg_security.py` runs in the
+required PR test job; it emits a visible GitHub warning for this risk and
+fails if the review is older than 14 days, if the advisory is removed, or
+if the package pin drifts from any of the four workflows and
+`scripts/check_toolchain.py`. **It is an offline consistency/review gate,
+not a live vulnerability scanner**, and passing it does not imply the
+FFmpeg package is secure.
+
+For each security review or new Ubuntu USN:
+1. Check upstream notices and Ubuntu 24.04 package availability using
+   Ubuntu's security pages and `apt-cache policy ffmpeg` on a *temporary
+   Ubuntu 24.04 runner*. Verify exact APT package version including epoch,
+   archive origin, and whether the update requires ESM Apps or any
+   subscription. Do not assume a package listed by a vendor is available
+   to GitHub-hosted runners.
+2. If the fix is ESM-only, **stop for a separate entitlement/cost and
+   deployment decision**. Do not activate Ubuntu Pro, change sources,
+   pull binaries from mirrors/PPAs or fall back silently. A supported
+   non-paid distribution/runner baseline may be evaluated separately.
+3. For an approved available update, use a dedicated PR/commit to update
+   **all four** `apt-get install ffmpeg=...` pins, the actual executable
+   `FFMPEG_BASELINE` in `check_toolchain.py`, the manifest/advisory and
+   tests together. Review linked libav dependency origin/version as well.
+   Never use unversioned `apt install ffmpeg` in these render workflows.
+4. Re-run the required Python tests, three HyperFrames lints and all
+   **three ephemeral real renders** (intro, Nounours, MVC) with MP4 contract
+   and exact Chrome/FFmpeg checks. Confirm zero uploaded artifacts.
+   Re-review sample frames and audio locally before authorizing
+   any manual distribution or merging the Draft PR.
+
+This two-track process preserves a known reproducible CI baseline while
+making security debt visible, dated and mandatory to revisit. A new version
+must be independently verified, not inferred from this manifest.
