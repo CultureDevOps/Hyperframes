@@ -75,6 +75,41 @@ def validate(policy, *, root=ROOT, today=None):
     if policy.get("security_status") != "known_gap_unresolved":
         errors.append("Known FFmpeg security gap cannot be silently marked as resolved")
 
+    # This MP4/MOV CVE is distinct from the older Ubuntu ESM advisory. Treat
+    # Debian "vulnerable" and Ubuntu "needs evaluation" as separate statuses;
+    # never silently promote an APT candidate to a CVE-free baseline.
+    open_cve = policy.get("open_cve_evidence", {})
+    debian = open_cve.get("debian", {})
+    ubuntu = open_cve.get("ubuntu", {})
+    if open_cve.get("id") != "CVE-2026-107678":
+        errors.append("Required MP4/MOV CVE evidence is missing")
+    if (debian.get("release"), debian.get("apt_package"), debian.get("status")) != (
+        "trixie", "7:7.1.5-0+deb13u1", "vulnerable"
+    ):
+        errors.append("Debian 13 MP4 CVE status/version requires a new vendor review")
+    if debian.get("source") != "https://security-tracker.debian.org/tracker/CVE-2026-107678":
+        errors.append("Debian MP4 CVE evidence must reference the official tracker")
+    if (ubuntu.get("noble_status"), ubuntu.get("resolute_status")) != (
+        "needs_evaluation", "needs_evaluation"
+    ):
+        errors.append("Ubuntu MP4 CVE evaluation status requires a new vendor review")
+    if ubuntu.get("source") != "https://ubuntu.com/security/CVE-2026-107678":
+        errors.append("Ubuntu MP4 CVE evidence must reference the official CVE page")
+    if open_cve.get("status") != "unresolved":
+        errors.append("MP4/MOV CVE cannot be marked resolved without a reviewed vendor fix")
+    try:
+        checked = date.fromisoformat(open_cve["checked_on"])
+        reviewed = date.fromisoformat(policy["reviewed_on"])
+        if checked > today or checked < reviewed:
+            errors.append("MP4 CVE source review date is inconsistent with policy review")
+    except (KeyError, TypeError, ValueError) as exc:
+        errors.append(f"Invalid MP4 CVE source review date: {exc}")
+
+    warnings.append(
+        "CVE-2026-107678: Debian Trixie 7:7.1.5-0+deb13u1 is tracked as vulnerable; "
+        "Ubuntu noble/resolute need evaluation. MP4/PSSH input is relevant; "
+        "neither a newer package number nor USN-8915-1 establishes a fix."
+    )
     warnings.append(
         f"FFmpeg pinned {version}, but Ubuntu {notice.get('id', 'USN')} "
         f"documents patched {fixed} via ESM Apps; not installed or verified here. "
