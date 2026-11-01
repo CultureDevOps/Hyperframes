@@ -60,10 +60,10 @@ The optional GitHub **PR-only** diagnostic job `probe-debian-ffmpeg`
 pulls the precise `docker.io/library/debian@sha256:...` digest on a
 **standard GitHub-hosted Ubuntu 24.04** runner, then runs a disposable
 container via `docker run --rm` with `--read-only`, `--cap-drop=ALL`
-and only `SETUID`/`SETGID`/`CHOWN` explicitly restored (required by
-APT's `_apt` sandbox and temporary index permissions),
+and only `SETUID`/`SETGID`/`CHOWN`/`FOWNER` explicitly restored
+(required by APT's `_apt` sandbox and metadata ownership/modes),
 `--security-opt=no-new-privileges`, constrained memory/process count and
-isolated tmpfs for APT metadata. No `-v /var/run/docker.sock` mount
+isolated tmpfs for APT metadata **and /tmp** for GPG signature verification. No `-v /var/run/docker.sock` mount
 is passed into this child container. The **first CI attempt** used GitHub
 Actions' native `jobs.container` feature, which the logs showed mounts
 the host Docker socket by default; this was intentionally replaced because

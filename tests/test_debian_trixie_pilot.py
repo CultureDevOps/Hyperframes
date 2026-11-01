@@ -33,10 +33,11 @@ class DebianPilotSafetyTests(unittest.TestCase):
         self.assertIn('dpkg --print-architecture', block)
         self.assertIn("docker run --rm", block)
         self.assertIn("--read-only", block)
+        self.assertIn("--tmpfs /tmp:rw", block)
         self.assertIn("--cap-drop=ALL", block)
-        for required_cap in ("SETUID", "SETGID", "CHOWN"):
+        for required_cap in ("SETUID", "SETGID", "CHOWN", "FOWNER"):
             self.assertIn("--cap-add=" + required_cap, block)
-        self.assertEqual(block.count("--cap-add="), 3)
+        self.assertEqual(block.count("--cap-add="), 4)
         self.assertIn("--security-opt=no-new-privileges", block)
         self.assertNotIn("--privileged", block)
         self.assertNotIn("/var/run/docker.sock", block)
