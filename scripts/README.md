@@ -1,10 +1,12 @@
 # Reproducible render contract (OPS-010)
 
-The three existing render workflows are intentionally limited to manual dispatch
-or pushes to **main** with path filters. Branch pushes and pull requests do not
-render or upload videos. The `verify.yml` workflow runs tests and installs the
-locked CLI for a no-video smoke test. It never invokes a render command or
-uploads artifacts.
+The three render workflows are **workflow_dispatch only**. They are not
+triggered by pushes, merges or pull requests. Video artifact upload is disabled
+by default: manual dispatch requires `upload_artifact: true` to enable
+upload. That choice must be separately authorized. When enabled, uploads are
+limited to the verified final MP4 and have a three-day retention window.
+The PR validation workflow runs Python tests and a no-render CLI smoke test;
+it never uploads artifacts.
 
 ## Toolchain reference
 
@@ -18,10 +20,11 @@ uploads artifacts.
 - The observed baseline FFmpeg is `6.1.1-3ubuntu5`, and Headless Chrome was
   `152.0.7977.30`. Their system/binary versions are **not locked** here.
 
-The render workflow files and both npm manifests match the `main` push path
-filters. **Merging this PR can automatically trigger all three render jobs** and
-upload their videos as GitHub Actions artifacts. Merge/publication need separate
-authorization; a green no-video PR smoke test does not prove visual output.
+Merging this PR will **not** trigger a render on `main` because the three
+render workflows have no `push` or `pull_request` trigger. A manual dispatch
+is still an explicit operation and artifact upload remains opt-in. Merging
+is separately permissioned. A green no-video CLI smoke test does not prove
+the visual output.
 
 ## Validate
 
@@ -36,6 +39,6 @@ The shared `ffprobe` check requires nonempty MP4 output with 1920x1080 video,
 30 fps (+/- 0.05), AAC audio and the intended 10s or 35s duration (+/- 0.25s).
 Failures identify the violated contract.
 
-Remaining work: validate a real render/visual pacing with the pinned toolchain,
+Remaining work: validate a real ephemeral render/visual pacing with the pinned toolchain,
 consider digest-pinning GitHub Actions and an FFmpeg/Chrome distribution strategy,
 and review artifact retention. No byte-for-byte video reproducibility is claimed.

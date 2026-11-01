@@ -1,14 +1,12 @@
 name: Render Nounours Antoine et Dany
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'compositions/culturedevops/nounours/**'
-      - 'scripts/generate_teddy_soundtrack.py'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/nounours.yml'
+    inputs:
+      upload_artifact:
+        description: 'Upload MP4 artifact only after separate approval'
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -38,8 +36,10 @@ jobs:
       - name: Verify MP4 metadata
         run: python3 scripts/verify_render.py compositions/culturedevops/nounours/renders/nounours-antoine-dany.mp4 --seconds 10
       - name: Upload teddy video
+        if: ${{ inputs.upload_artifact == true }}
         uses: actions/upload-artifact@v4
         with:
           name: nounours-antoine-dany
           path: compositions/culturedevops/nounours/renders/nounours-antoine-dany.mp4
           if-no-files-found: error
+          retention-days: 3

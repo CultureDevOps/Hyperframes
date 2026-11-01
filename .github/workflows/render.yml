@@ -1,13 +1,12 @@
 name: Render Culture DevOps intro
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'compositions/culturedevops/intro/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/render.yml'
+    inputs:
+      upload_artifact:
+        description: 'Upload MP4 artifact only after separate approval'
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -40,13 +39,11 @@ jobs:
           mv renders/culturedevops-with-sound.mp4 renders/culturedevops-intro.mp4
       - name: Verify MP4 metadata
         run: python3 scripts/verify_render.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10
-      - name: Upload rendered output and diagnostics
-        if: success()
+      - name: Upload rendered output (explicit opt-in only)
+        if: ${{ inputs.upload_artifact == true }}
         uses: actions/upload-artifact@v4
         with:
           name: culturedevops-render
-          path: |
-            compositions/culturedevops/intro/**/*.mp4
-            compositions/culturedevops/intro/*.mp4
-            renders/**/*.mp4
+          path: compositions/culturedevops/intro/renders/culturedevops-intro.mp4
           if-no-files-found: error
+          retention-days: 3
