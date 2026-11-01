@@ -60,8 +60,8 @@ The optional GitHub **PR-only** diagnostic job `probe-debian-ffmpeg`
 pulls the precise `docker.io/library/debian@sha256:...` digest on a
 **standard GitHub-hosted Ubuntu 24.04** runner, then runs a disposable
 container via `docker run --rm` with `--read-only`, `--cap-drop=ALL`
-and only `SETUID`/`SETGID`/`CHOWN`/`FOWNER` explicitly restored
-(required by APT's `_apt` sandbox and metadata ownership/modes),
+and only `SETUID`/`SETGID`/`CHOWN`/`FOWNER`/`DAC_OVERRIDE` explicitly restored
+(required by APT's `_apt` sandbox, metadata ownership/modes and partial-index access),
 `--security-opt=no-new-privileges`, constrained memory/process count and
 isolated tmpfs for APT metadata **and /tmp** for GPG signature verification. No `-v /var/run/docker.sock` mount
 is passed into this child container. The **first CI attempt** used GitHub

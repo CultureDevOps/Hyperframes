@@ -181,6 +181,7 @@ jobs:
             --cap-add=SETGID \
             --cap-add=CHOWN \
             --cap-add=FOWNER \
+            --cap-add=DAC_OVERRIDE \
             --security-opt=no-new-privileges \
             --pids-limit=128 \
             --memory=512m \

@@ -8,6 +8,6 @@
   "source": "https://docker.debian.net/",
   "official_registry_page": "https://hub.docker.com/_/debian",
   "security_status": "NOT_ASSESSED",
-  "mode": "Read-only rootfs, tmpfs /tmp and APT caches, cap-drop ALL + SETUID/SETGID/CHOWN/FOWNER for apt sandbox, no Docker socket mount, no FFmpeg install",
+  "mode": "Read-only rootfs, tmpfs /tmp and APT caches, cap-drop ALL + SETUID/SETGID/CHOWN/FOWNER/DAC_OVERRIDE for APT sandbox, no Docker socket mount, no FFmpeg install",
   "known_risk": "Image digest locks root filesystem only; live APT indexes and candidate FFmpeg are not pinned, image base is not a signature"
 }
