@@ -80,3 +80,57 @@ When updating, review the upstream action release, resolve its new official
 commit SHA, update both the YAML uses and manifest, and rerun tests/CI. This
 locks action source revisions; it does **not** lock GitHub runner images, installed
 system packages or browser download hashes, nor prove action-code safety.
+
+## Private on-device visual review (no publishing)
+
+**Important:** this GitHub repository is **public**. GitHub Actions videos or
+screenshots attached as artifacts, pull-request comments, releases or commit
+files are **not private** and MUST NOT be used as visual review material.
+The existing CI smoke runs discard all videos when the ephemeral runner ends.
+
+To inspect one video, obtain or render the final MP4 **locally on your own
+workstation**, including its original soundtrack. Nothing in CI can be
+downloaded later because no MP4 was uploaded. Use the corresponding manual
+render workflow steps locally, with `npm ci` and the matching soundtrack
+generator, but never use GitHub Actions upload as a transport.
+
+Then run this entirely local tool from the repository root:
+
+```powershell
+# PowerShell: example with an MP4 already rendered and muxed on this PC
+py -3 scripts/private_visual_review.py "C:\Videos\mvc-explainer.mp4" --seconds 35
+# Intro and nounours: --seconds 10
+```
+
+The tool requires local `ffmpeg` and `ffprobe`. It validates the same MP4
+contract and extracts nine frames at 5–95% of the duration into a 3×3
+contact sheet under `~/.hyperframes-private-review/review-<UTC>-<random>/`,
+with a source SHA-256 and timestamp fractions in `manifest.json`. The output
+is **never** created inside this Git repository. On POSIX the private folder
+must have mode 0700 and files use restrictive permissions. On Windows,
+**verify that inherited NTFS ACLs restrict the output directory**; `chmod`
+does not establish Windows confidentiality.
+
+Review the contact sheet for crops and legibility, then play the original
+MP4 locally for motion, sound levels, timing and whether the punchline lands.
+Do not share the MP4 or screenshot through public GitHub, CI logs or cloud
+storage. The script does not upload or send data anywhere.
+
+## Binary provenance decision
+
+On Ubuntu, apt validates signed repository `InRelease` metadata which pins
+`Packages` hashes and in turn the `.deb` checksums; this provides a stronger
+origin chain than comparing `ffmpeg -version` alone. Ubuntu documents the
+mechanism: https://documentation.ubuntu.com/security/software-integrity/archive-verification/ .
+A fixed apt version can disappear from current repositories; Ubuntu Snapshot
+is a potential future frozen source, requiring separate review.
+
+Chrome for Testing provides official **version/platform/download URLs**:
+https://github.com/GoogleChromeLabs/chrome-for-testing . A version string and
+path are not themselves a cryptographic authenticity check. For the current
+HyperFrames-managed download, CI's intro smoke logs **SHA-256 of the installed
+FFmpeg, FFprobe and Chrome executables** (hashes only; no media). These are
+auditable *observed fingerprints*, **not** vendor-signed or independently
+trusted digests. Do not promote them into trust anchors without reviewing
+the archive origin and binary signing/integrity evidence. No automatic browser
+upgrade, binary replacement or new paid resource is performed.

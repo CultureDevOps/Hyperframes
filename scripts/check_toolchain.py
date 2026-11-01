@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Detect drift from the verified FFmpeg and HyperFrames bundled-Chrome baseline."""
 import argparse
+import hashlib
+import shutil
 from pathlib import Path
 import re
 import subprocess
@@ -30,7 +32,15 @@ def version_output(command):
     return result.stdout + result.stderr
 
 
-def verify(*, check_chrome=False, home=None):
+def binary_sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def verify(*, check_chrome=False, home=None, show_sha256=False):
     errors = []
     for executable in ("ffmpeg", "ffprobe"):
         try:
@@ -39,6 +49,15 @@ def verify(*, check_chrome=False, home=None):
                 errors.append(f"{executable} version {actual!r}; expected {FFMPEG_BASELINE}")
             else:
                 print(f"Verified {executable}: {actual}")
+                if show_sha256:
+                    resolved = shutil.which(executable)
+                    if not resolved:
+                        errors.append(f"Cannot locate {executable} for digest")
+                    else:
+                        try:
+                            print(f"SHA256 {executable}: {binary_sha256(resolved)}")
+                        except OSError as exc:
+                            errors.append(f"Cannot hash {executable}: {exc}")
         except (OSError, subprocess.SubprocessError) as exc:
             errors.append(f"Cannot check {executable}: {exc}")
     if check_chrome:
@@ -53,6 +72,11 @@ def verify(*, check_chrome=False, home=None):
                     errors.append(f"Chrome binary={binary_version!r}, cache={path_version!r}; expected {CHROME_BASELINE}")
                 else:
                     print(f"Verified Chrome Headless Shell: {binary_version}")
+                    if show_sha256:
+                        try:
+                            print(f"SHA256 HeadlessChrome: {binary_sha256(chrome[0])}")
+                        except OSError as exc:
+                            errors.append(f"Cannot hash Chrome: {exc}")
             except (OSError, subprocess.SubprocessError) as exc:
                 errors.append(f"Cannot check Chrome: {exc}")
     for error in errors:
@@ -63,8 +87,9 @@ def verify(*, check_chrome=False, home=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check-chrome", action="store_true")
+    parser.add_argument("--show-sha256", action="store_true", help="Print local executable hashes for audit; not signatures")
     args = parser.parse_args(argv)
-    return verify(check_chrome=args.check_chrome)
+    return verify(check_chrome=args.check_chrome, show_sha256=args.show_sha256)
 
 
 if __name__ == "__main__":

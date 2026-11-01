@@ -33,6 +33,13 @@ class ToolchainDriftTests(unittest.TestCase):
             exe.touch()
             self.assertEqual(tool.verify(check_chrome=True, home=home), 0)
 
+    def test_binary_sha256_matches_file_content(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "ffmpeg"
+            path.write_bytes(b"fixed binary")
+            self.assertEqual(tool.binary_sha256(path), hashlib.sha256(b"fixed binary").hexdigest())
+
     def test_ffmpeg_drift_fails(self):
         with patch.object(tool, "version_output", return_value="ffmpeg version 7.0"):
             self.assertEqual(tool.verify(), 1)
