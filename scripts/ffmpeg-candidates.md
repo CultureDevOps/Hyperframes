@@ -75,3 +75,43 @@ C'est un **contrôle de cohérence d'un relevé daté, pas une interrogation
 continue du tracker** ni un scanner de CVE. Le prochain réexamen reste
 prévu avant le 15/11/2026. Les sondes APT Ubuntu et Debian **sans installation**
 et les trois rendus techniques éphémères restent inchangés.
+
+## Nouvelle preuve vérifiée le 01/11/2026 — correctif amont FFmpeg, pas encore un paquet
+
+**Fait inédit par rapport aux lots précédents :** le miroir officiel
+[FFmpeg/FFmpeg, commit `969c7eb091989a664cb7bf66a1f02051cc46cb52`](https://github.com/FFmpeg/FFmpeg/commit/969c7eb091989a664cb7bf66a1f02051cc46cb52),
+daté du **19/10/2026**, modifie `libavutil/encryption_info.c` :
+`av_encryption_init_info_free` abandonne l'appel récursif à
+`av_encryption_init_info_free(info->next)` pour une boucle `while`
+avec pointeur `next`. Cette modification cible l'épuisement de pile
+associé à [CVE-2026-107678](https://security-tracker.debian.org/tracker/CVE-2026-107678).
+Elle n'établit pas à elle seule que toute charge CPU quadratique
+ou toutes les CVE FFmpeg sont réglées.
+
+**Vérification code source, et non déduction d'un numéro de version :**
+les fichiers de `FFmpeg/FFmpeg` consultés en lecture seule sur
+`master` contiennent la boucle, mais `release/7.1`,
+`release/8.0`, `release/8.1` et `release/9.0`
+conservent encore l'appel récursif au **01/11/2026**.
+Empreintes Git des *fichiers* et commit amont consignés
+dans `ffmpeg-security-policy.json`; une branche évoluant
+ultérieurement devra être revérifiée.
+
+**Statut éditeur/distribution simultané :** Debian Trixie
+`7:7.1.5-0+deb13u1` reste `vulnerable` dans
+le [tracker officiel](https://security-tracker.debian.org/tracker/CVE-2026-107678)
+avec la note d'attendre la branche 7.1.x ; Ubuntu 24.04/26.04
+[Needs evaluation](https://ubuntu.com/security/CVE-2026-107678).
+**Correctif amont sur master ≠ correctif disponible, empaqueté,
+testé ou attesté dans le runner.**
+
+**Options gratuites, classées par vérifiabilité :** (1) attendre
+une version corrigée publiquement par la distribution et vérifier
+changelog, signature APT, disponibilité réelle, CVE et tests ; (2)
+pilote de compilation depuis la source amont *environnement isolé*
+avec provenance, dépendances et maintenabilité à revoir (aucun
+binaire n'a été compilé ici) ; (3) rester sur l'environnement éphémère
+actuel pour contenus locaux de confiance en maintenant dette et
+avertissements. Ne pas prendre une version tierce « static build »
+sans attestation comme correction vérifiée. Pas de bascule,
+de publication, de runner privilégié ou de dépense à ce jalon.

@@ -97,6 +97,26 @@ def validate(policy, *, root=ROOT, today=None):
         errors.append("Ubuntu MP4 CVE evidence must reference the official CVE page")
     if open_cve.get("status") != "unresolved":
         errors.append("MP4/MOV CVE cannot be marked resolved without a reviewed vendor fix")
+    upstream = open_cve.get("upstream", {})
+    expected_commit = "969c7eb091989a664cb7bf66a1f02051cc46cb52"
+    if upstream.get("repository") != "FFmpeg/FFmpeg" or upstream.get("source_branch") != "master":
+        errors.append("Upstream FFmpeg fix origin/branch requires review")
+    if upstream.get("fix_commit") != expected_commit or upstream.get("source_url") != (
+        "https://github.com/FFmpeg/FFmpeg/commit/" + expected_commit
+    ):
+        errors.append("Upstream MP4 stack fix commit is missing or changed without review")
+    if upstream.get("commit_date") != "2026-10-19" or upstream.get("file") != "libavutil/encryption_info.c":
+        errors.append("Upstream MP4 fix date or code file requires review")
+    if upstream.get("distribution_status") != "UPSTREAM_MASTER_COMMIT_EXISTS_BUT_NO_VERIFIED_DISTRO_PACKAGE_FIX":
+        errors.append("Do not silently equate upstream commit with an installed distro fix")
+    expected_branches = {"release/7.1", "release/8.0", "release/8.1", "release/9.0"}
+    branches = upstream.get("release_branches_recursion_present", {})
+    if not isinstance(branches, dict) or set(branches) != expected_branches or not all(
+        re.fullmatch(r"[a-f0-9]{40}", value or "") for value in branches.values()
+    ):
+        errors.append("Release branch evidence is absent or invalid")
+    if upstream.get("master_file_sha") != "9643840157fad0aac1004595cf1fcc5e6195bb46":
+        errors.append("Master source-code fingerprint changed without review")
     try:
         checked = date.fromisoformat(open_cve["checked_on"])
         reviewed = date.fromisoformat(policy["reviewed_on"])
@@ -105,6 +125,11 @@ def validate(policy, *, root=ROOT, today=None):
     except (KeyError, TypeError, ValueError) as exc:
         errors.append(f"Invalid MP4 CVE source review date: {exc}")
 
+    warnings.append(
+        "CVE-2026-107678: upstream FFmpeg master commit 969c7eb fixes recursive free; "
+        "release/7.1, release/8.0, release/8.1, release/9.0 still show recursive code; "
+        "no distributor package containing fix verified. Do not change pinned FFmpeg."
+    )
     warnings.append(
         "CVE-2026-107678: Debian Trixie 7:7.1.5-0+deb13u1 is tracked as vulnerable; "
         "Ubuntu noble/resolute need evaluation. MP4/PSSH input is relevant; "

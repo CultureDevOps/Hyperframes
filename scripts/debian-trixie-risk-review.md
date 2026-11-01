@@ -89,3 +89,20 @@ PR-only experiment may install exactly the candidate in a disposable
 Debian container and try the three MP4 contracts without upload.
 **Do not switch the existing three render workflows, merge, deploy,
 publish video or activate paid resources** as part of this lot.
+
+## 2026-11-01 upstream iterative-free fix is present on master only (source snapshot)
+
+Official FFmpeg GitHub mirror [commit `969c7eb091989a664cb7bf66a1f02051cc46cb52`](https://github.com/FFmpeg/FFmpeg/commit/969c7eb091989a664cb7bf66a1f02051cc46cb52)
+(2026-10-19) replaces the recursive `av_encryption_init_info_free(info->next)`
+with iterative release in `libavutil/encryption_info.c`. Source file
+verification on 2026-11-01: `master` includes the change, whereas
+`release/7.1`, `release/8.0`, `release/8.1`, and
+`release/9.0` still use recursion. No Debian Trixie
+`7:7.1.5-0+deb13u1` fix or Ubuntu 24.04/26.04 package fix for
+**CVE-2026-107678** was verified. Debian tracker still shows
+`vulnerable` / `postponed`; Ubuntu remains `Needs evaluation`.
+This is **a useful upstream technical milestone**, not evidence that
+current render runners are remediated. Keep all existing FFmpeg pins
+and publishing controls unchanged. A future free fix candidate must
+have a reviewed packaged/versioned change and safe CI validation;
+do not assume the master patch resolves other FFmpeg CVEs.
