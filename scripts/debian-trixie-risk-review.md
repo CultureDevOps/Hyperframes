@@ -59,7 +59,9 @@ Images and Debian's reproducibility portal:
 The optional GitHub **PR-only** diagnostic job `probe-debian-ffmpeg`
 pulls the precise `docker.io/library/debian@sha256:...` digest on a
 **standard GitHub-hosted Ubuntu 24.04** runner, then runs a disposable
-container via `docker run --rm` with `--read-only`, `--cap-drop=ALL`,
+container via `docker run --rm` with `--read-only`, `--cap-drop=ALL`
+and only `SETUID`/`SETGID`/`CHOWN` explicitly restored (required by
+APT's `_apt` sandbox and temporary index permissions),
 `--security-opt=no-new-privileges`, constrained memory/process count and
 isolated tmpfs for APT metadata. No `-v /var/run/docker.sock` mount
 is passed into this child container. The **first CI attempt** used GitHub
