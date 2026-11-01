@@ -57,9 +57,17 @@ Images and Debian's reproducibility portal:
 - Provenance data recorded in `scripts/debian-trixie-image-lock.json`.
 
 The optional GitHub **PR-only** diagnostic job `probe-debian-ffmpeg`
-requests this precise `docker.io/library/debian@sha256:...` digest on a
-**standard GitHub-hosted Ubuntu 24.04** runner with no `--privileged`
-or self-hosted Docker socket. It verifies the container OS and amd64,
+pulls the precise `docker.io/library/debian@sha256:...` digest on a
+**standard GitHub-hosted Ubuntu 24.04** runner, then runs a disposable
+container via `docker run --rm` with `--read-only`, `--cap-drop=ALL`,
+`--security-opt=no-new-privileges`, constrained memory/process count and
+isolated tmpfs for APT metadata. No `-v /var/run/docker.sock` mount
+is passed into this child container. The **first CI attempt** used GitHub
+Actions' native `jobs.container` feature, which the logs showed mounts
+the host Docker socket by default; this was intentionally replaced because
+the APT-only probe does not need Docker-daemon access inside the container.
+The GitHub-hosted runner itself still uses its standard Docker daemon to
+pull and start the disposable child; no privileged runner is provisioned. It verifies the container OS and amd64,
 updates only the container's ephemeral signed APT index, and reads
 `apt-cache policy ffmpeg`, **without package install, media render,
 artifact upload or deployment**. Logs must prove pull success and actual

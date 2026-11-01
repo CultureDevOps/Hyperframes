@@ -19,7 +19,7 @@ class DebianPilotSafetyTests(unittest.TestCase):
         self.assertEqual(info["publisher"], "docker.io/library/debian")
         self.assertEqual(info["security_status"], "NOT_ASSESSED")
         wf = (ROOT / ".github/workflows/verify.yml").read_text()
-        self.assertIn(f"image: {info['publisher']}@{info['digest']}", wf)
+        self.assertIn(f"docker.io/library/debian@{info['digest']}", wf)
         self.assertNotIn("image: debian:trixie", wf)
 
     def test_probe_is_no_install_no_render_no_upload(self):
@@ -31,9 +31,16 @@ class DebianPilotSafetyTests(unittest.TestCase):
         self.assertIn("needs: test", block)
         self.assertIn("VERSION_CODENAME=trixie", block)
         self.assertIn('dpkg --print-architecture', block)
+        self.assertIn("docker run --rm", block)
+        self.assertIn("--read-only", block)
+        self.assertIn("--cap-drop=ALL", block)
+        self.assertIn("--security-opt=no-new-privileges", block)
+        self.assertNotIn("--privileged", block)
+        self.assertNotIn("/var/run/docker.sock", block)
+        self.assertNotIn("container:", block)
         self.assertIn("apt-cache policy ffmpeg", block)
         self.assertIn("SECURITY_STATUS=NOT_ASSESSED", block)
-        for forbidden in ("--privileged", "apt-get install", "docker run",
+        for forbidden in ("--privileged", "apt-get install",
                           "hyperframes render", "upload-artifact",
                           "curl ", "wget ", "sudo ", "secrets."):
             with self.subTest(forbidden=forbidden):

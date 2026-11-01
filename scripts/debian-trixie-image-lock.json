@@ -8,6 +8,6 @@
   "source": "https://docker.debian.net/",
   "official_registry_page": "https://hub.docker.com/_/debian",
   "security_status": "NOT_ASSESSED",
-  "mode": "PR-only no-install APT candidate probe; does not render or publish media",
+  "mode": "PR-only digest-verified `docker run --rm` with read-only filesystem, cap-drop=ALL, no-new-privileges and no host Docker socket mount; APT index and candidate only",
   "known_risk": "Image digest locks root filesystem only; live APT indexes and candidate FFmpeg are not pinned, image base is not a signature"
 }

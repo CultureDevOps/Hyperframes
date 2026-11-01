@@ -162,29 +162,37 @@ jobs:
           python3 scripts/probe_ffmpeg_apt.py
 
   probe-debian-ffmpeg:
-    name: Probe Debian 13 official amd64 OCI digest (no FFmpeg install)
+    name: Probe Debian 13 official amd64 digest (isolated no-install)
     if: github.event_name == 'pull_request'
     needs: test
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
-    container:
-      image: docker.io/library/debian@sha256:e2914ec98e08b24b4cee3cefcb9f90dfb5519f8d215a2ccf0c9a49b10b6e43de
     steps:
-      - name: Verify Debian identity, architecture and available FFmpeg
-        shell: sh
+      - name: Probe official Debian image with no mounted Docker socket
         run: |
           set -eu
-          grep -qx 'ID=debian' /etc/os-release
-          grep -qx 'VERSION_CODENAME=trixie' /etc/os-release
-          test "$(dpkg --print-architecture)" = amd64
-          echo "DEBIAN_IMAGE_ARCH=amd64"
-          echo "DEBIAN_IMAGE_DIGEST=sha256:e2914ec98e08b24b4cee3cefcb9f90dfb5519f8d215a2ccf0c9a49b10b6e43de"
-          apt-get update -qq
-          apt-cache policy ffmpeg
-          candidate="$(apt-cache policy ffmpeg | sed -n 's/^ *Candidate: //p')"
-          test -n "$candidate"
-          test "$candidate" != "(none)"
-          echo "DEBIAN_FFMPEG_APT_CANDIDATE=$candidate"
-          echo "SECURITY_STATUS=NOT_ASSESSED; NO_PACKAGE_INSTALLED; NO_MEDIA_RENDERED"
+          docker pull docker.io/library/debian@sha256:e2914ec98e08b24b4cee3cefcb9f90dfb5519f8d215a2ccf0c9a49b10b6e43de
+          docker run --rm \
+            --read-only \
+            --cap-drop=ALL \
+            --security-opt=no-new-privileges \
+            --pids-limit=128 \
+            --memory=512m \
+            --tmpfs /var/lib/apt/lists:rw,nosuid,nodev,size=128m \
+            --tmpfs /var/cache/apt:rw,nosuid,nodev,size=32m \
+            docker.io/library/debian@sha256:e2914ec98e08b24b4cee3cefcb9f90dfb5519f8d215a2ccf0c9a49b10b6e43de sh -ec '
+              set -eu
+              grep -qx "ID=debian" /etc/os-release
+              grep -qx "VERSION_CODENAME=trixie" /etc/os-release
+              test "$(dpkg --print-architecture)" = amd64
+              echo "DEBIAN_IMAGE_ARCH=amd64"
+              apt-get update -qq
+              apt-cache policy ffmpeg
+              candidate="$(apt-cache policy ffmpeg | sed -n "s/^ *Candidate: //p")"
+              test -n "$candidate"
+              test "$candidate" != "(none)"
+              echo "DEBIAN_FFMPEG_APT_CANDIDATE=$candidate"
+              echo "SECURITY_STATUS=NOT_ASSESSED; NO_PACKAGE_INSTALLED; NO_MEDIA_RENDERED"
+            '
