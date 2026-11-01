@@ -78,7 +78,17 @@ try {
     $lockedRejected = $false
     try {
         try { $null = Copy-PrivateWindowsMedia -Source $lockedSource -Destination $lockedDest }
-        catch [System.IO.IOException] { $lockedRejected = $true }
+        catch {
+            # PowerShell 5.1 wraps .NET File.Copy IOException as
+            # MethodInvocationException; PowerShell 7 can differ.
+            $outer = $_.Exception
+            if (($outer -is [System.IO.IOException]) -or
+                ($outer.InnerException -is [System.IO.IOException])) {
+                $lockedRejected = $true
+            } else {
+                throw
+            }
+        }
     } finally {
         $stream.Dispose()
     }
