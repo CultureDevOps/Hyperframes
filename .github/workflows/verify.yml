@@ -77,6 +77,9 @@ jobs:
       - name: PowerShell 7 compatibility plan-only
         shell: pwsh
         run: .\scripts\render_and_review.ps1 -Composition nounours -PlanOnly
+      - name: Windows PowerShell 7 NTFS interruption and cleanup tests (no media)
+        shell: pwsh
+        run: .\tests\test_windows_acl.ps1
 
   smoke-intro:
     name: Ephemeral intro smoke (no upload)

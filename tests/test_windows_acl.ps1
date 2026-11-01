@@ -69,6 +69,58 @@ try {
         throw 'Missing source did not fail cleanly.'
     }
 
+    # A real locked source triggers a filesystem IOException. No destination
+    # or new partial must appear, and the lock must be released by the test.
+    $lockedSource = Join-Path $testRoot 'locked-source.mp4'
+    [IO.File]::WriteAllBytes($lockedSource, $bytes)
+    $lockedDest = Join-Path $private 'locked-dest.mp4'
+    $stream = [IO.File]::Open($lockedSource, [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    $lockedRejected = $false
+    try {
+        try { $null = Copy-PrivateWindowsMedia -Source $lockedSource -Destination $lockedDest }
+        catch [System.IO.IOException] { $lockedRejected = $true }
+    } finally {
+        $stream.Dispose()
+    }
+    if (-not $lockedRejected -or (Test-Path -LiteralPath $lockedDest)) {
+        throw 'Locked source was not rejected safely.'
+    }
+    if (@(Get-ChildItem -LiteralPath $private -Filter '*.partial').Count -ne 0) {
+        throw 'Locked-source failure left an OPS-010 partial.'
+    }
+
+    # Simulated hard termination: create a stale partial that PowerShell's
+    # finally could NOT clean up. The read-only inspector must report only
+    # a sufficiently old, correctly named file; must NOT remove anything.
+    $staleName = '.ops010-copy-' + [Guid]::NewGuid().ToString('N') + '.partial'
+    $stale = Join-Path $private $staleName
+    [IO.File]::WriteAllBytes($stale, [byte[]](9,8,7))
+    [IO.File]::SetLastWriteTimeUtc($stale, [DateTime]::UtcNow.AddHours(-3))
+    $recent = Join-Path $private ('.ops010-copy-' + [Guid]::NewGuid().ToString('N') + '.partial')
+    [IO.File]::WriteAllBytes($recent, [byte[]](1))
+    $unrelated = Join-Path $private '.ops010-copy-user-file.partial'
+    [IO.File]::WriteAllBytes($unrelated, [byte[]](6))
+    [IO.File]::SetLastWriteTimeUtc($unrelated, [DateTime]::UtcNow.AddHours(-3))
+    $reported = @(Get-PrivateWindowsInterruptedCopies -Directory $private -MinimumAgeMinutes 60)
+    if ($reported.Count -ne 1 -or $reported[0] -ne $stale) {
+        throw 'Interrupted-copy inspector selected incorrect files.'
+    }
+    foreach ($path in @($stale, $recent, $unrelated)) {
+        if (-not (Test-Path -LiteralPath $path)) {
+            throw 'Read-only orphan inspection deleted a file.'
+        }
+    }
+    # Existing, older orphan must not be touched by another successful copy.
+    $anotherFinal = Join-Path $private 'after-interruption.mp4'
+    $null = Copy-PrivateWindowsMedia -Source $source -Destination $anotherFinal
+    if (-not (Test-Path -LiteralPath $stale)) {
+        throw 'A newer copy removed an unrelated interrupted copy.'
+    }
+    # Simulated stop is test-only; clean only the exact synthetic fixtures.
+    foreach ($path in @($stale, $recent, $unrelated)) {
+        Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+    }
+
     # An existing folder with explicit Everyone read must fail, without rewriting it.
     $permissive = Join-Path $testRoot 'permissive'
     $null = New-Item -ItemType Directory -Path $permissive
@@ -114,7 +166,7 @@ try {
     try { $null = Initialize-PrivateWindowsDirectory -Path '\\example.invalid\share\media' }
     catch { if ($_.Exception.Message -like '*NTFS_UNSAFE*') { $uncRejected = $true } else { throw } }
     if (-not $uncRejected) { throw 'UNC path was accepted.' }
-    Write-Output 'WINDOWS_NTFS_ACL_TESTS_OK: private directory + fake media copy/hash + no overwrite + failed cleanup + fail closed + UNC rejection'
+    Write-Output 'WINDOWS_NTFS_ACL_TESTS_OK: fake copy/hash + locked source + stale interruption audit + no overwrite + failure cleanup + ACL/UNC refusal'
 }
 finally {
     # Only remove isolated, freshly created data on the disposable GitHub runner.

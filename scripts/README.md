@@ -311,3 +311,36 @@ to use a permissive existing directory, and cleanup of checksum-rejected
 partial copies. The test uses disposable hosted Windows runner storage
 only. It neither renders nor uploads a video, and has no access to your PC.
 Full video rendering remains tested on Linux PowerShell, not native Windows.
+
+
+## OPS-010 — interruption, permissions and cleanup on Windows (lot 14)
+
+The final private NTFS copy keeps the **original failure** as its primary
+exception. If cleanup of its own newly created file or GUID-named partial
+also fails, it reports \`NTFS_CLEANUP_INCOMPLETE\` without claiming a
+successful operation; an operator must inspect the private folder. It never
+rewrites a pre-existing final file.
+
+A normal PowerShell exception triggers the \`finally\` cleanup of this
+invocation's temporary file. **A forced process termination, machine crash,
+or power loss does not execute \`finally\`** and may leave a private
+\`.ops010-copy-<32 lowercase hex>.partial\` file. This is a confidentiality
+boundary, not an upload: the stale file stays under restricted local NTFS
+ACLs. We intentionally do **not** automatically delete orphan files from
+other/previous invocations, which could still be in progress.
+
+A read-only helper \`Get-PrivateWindowsInterruptedCopies\` (dot-source
+\`scripts/private_output_acl.ps1\`) checks a verified private NTFS directory
+and lists only OPS-010-style partial files older than 60 minutes by default.
+It does not remove them, scan unrelated media, upload anything, or modify
+ACLs on existing directories. A person must decide how to handle any result.
+
+The hosted Windows PowerShell 5.1 and PowerShell 7 tests use **synthetic
+byte fixtures only**: an exclusive source lock (I/O failure), an old
+partial representing a simulated hard stop, a recent in-progress partial,
+an unrelated file, and a successful copy in the presence of an orphan.
+The tests assert that only the old exact-named partial is reported and
+that no scanner or newer copy deletes it. Synthetic fixtures are cleaned
+only inside the disposable GitHub-hosted runner test root. This does not
+prove cleanup after an actual forced termination, nor constitute a real
+Windows render or human visual/audio review.

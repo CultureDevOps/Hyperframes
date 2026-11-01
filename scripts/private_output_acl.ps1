@@ -137,6 +137,7 @@ function Copy-PrivateWindowsMedia {
     }
     $stage = Join-Path $destinationDir ('.ops010-copy-' + [Guid]::NewGuid().ToString('N') + '.partial')
     $published = $false
+    $primaryError = $null
     try {
         # Copy INSIDE the private directory; the partial file inherits private
         # ACLs, rather than retaining the permissions of the raw render.
@@ -156,15 +157,60 @@ function Copy-PrivateWindowsMedia {
         [IO.File]::Move($stage, $finalFull)
         $published = $true
         Assert-PrivateWindowsAcl -Path $finalFull -AllowInheritedChild
-        return $finalFull
     } catch {
+        $primaryError = $_
+        # Only a final created by THIS invocation may be rolled back. Never
+        # delete a pre-existing final. Preserve the first failure for diagnosis.
         if ($published -and [IO.File]::Exists($finalFull)) {
-            Remove-Item -LiteralPath $finalFull -Force -ErrorAction Stop
+            try {
+                Remove-Item -LiteralPath $finalFull -Force -ErrorAction Stop
+            } catch {
+                Write-Warning 'NTFS_CLEANUP_INCOMPLETE: unable to roll back newly created private final file.'
+            }
         }
-        throw
     } finally {
         if ([IO.File]::Exists($stage)) {
-            Remove-Item -LiteralPath $stage -Force -ErrorAction Stop
+            try {
+                Remove-Item -LiteralPath $stage -Force -ErrorAction Stop
+            } catch {
+                if ($null -eq $primaryError) {
+                    $primaryError = $_
+                } else {
+                    Write-Warning 'NTFS_CLEANUP_INCOMPLETE: private partial remains after failure; review locally.'
+                }
+            }
         }
+    }
+    if ($null -ne $primaryError) { throw $primaryError }
+    return $finalFull
+}
+
+
+function Get-PrivateWindowsInterruptedCopies {
+    <#
+      READ ONLY: candidate orphan partials after an abrupt process termination.
+      Exact OPS-010 32-hex GUID filenames; excludes active/recent copies. The
+      caller must review them manually. Never auto-delete another invocation's
+      partial files; a force-kill cannot execute PowerShell finally.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Directory,
+        [ValidateRange(1,525600)][int]$MinimumAgeMinutes = 60
+    )
+    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+        throw 'NTFS_UNSAFE: interrupted-copy inspection requires Windows.'
+    }
+    $full = [IO.Path]::GetFullPath($Directory)
+    $null = Initialize-PrivateWindowsDirectory -Path $full
+    $threshold = [DateTime]::UtcNow.AddMinutes(-$MinimumAgeMinutes)
+    foreach ($item in @(Get-ChildItem -LiteralPath $full -Force -File -ErrorAction Stop)) {
+        if ($item.Name -cnotmatch '^\.ops010-copy-[0-9a-f]{32}\.partial$') { continue }
+        if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { continue }
+        if ($item.LastWriteTimeUtc -gt $threshold) { continue }
+        Assert-PrivateWindowsAcl -Path $item.FullName -AllowInheritedChild
+        # A path is a candidate for explicit human review, NOT automatically
+        # deleted and not uploaded. The calling script does not print bytes.
+        Write-Output $item.FullName
     }
 }
