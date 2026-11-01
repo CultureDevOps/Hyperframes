@@ -24,6 +24,8 @@ jobs:
           python-version: '3.12'
       - name: Test render metadata checks and workflow boundaries
         run: python -m unittest discover -s tests -v
+      - name: Check PowerShell local plan (no render or upload)
+        run: pwsh -NoProfile -File scripts/render_and_review.ps1 -Composition mvc -PlanOnly
       - name: Audit pinned FFmpeg security policy (read-only)
         run: python3 scripts/audit_ffmpeg_security.py
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 (verified 2026-11-01)
@@ -93,6 +95,12 @@ jobs:
           umask 077
           python3 scripts/private_visual_review.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10 --out-root "$RUNNER_TEMP/ops010-private-review"
           test -z "$(find "$RUNNER_TEMP/ops010-private-review" -name '*.mp4' -print -quit)"
+      - name: Exercise full PowerShell render + soundtrack + private review (no upload)
+        run: |
+          pwsh -NoProfile -File scripts/render_and_review.ps1 -Composition intro -SkipInstall -OutputDirectory "$RUNNER_TEMP/ops010-powershell-private"
+          test "$(find "$RUNNER_TEMP/ops010-powershell-private" -maxdepth 1 -name '*.mp4' | wc -l)" -eq 1
+          test "$(find "$RUNNER_TEMP/ops010-powershell-private" -name 'contact-sheet.png' | wc -l)" -eq 1
+          test -z "$(find compositions/culturedevops/intro/renders -maxdepth 1 -name 'ops010-*' -print -quit)"
 
   smoke-other:
     name: Ephemeral ${{ matrix.composition }} smoke (no upload)

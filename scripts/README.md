@@ -195,3 +195,61 @@ See [debian-trixie-risk-review.md](debian-trixie-risk-review.md) and
 The PR-only Debian job checks official amd64 image digest and live APT
 candidate **without installing FFmpeg or rendering media**. Debian's
 remaining CVEs are not considered resolved by a pinned container.
+
+## Windows PowerShell: one-command private local render and review
+
+From the root of your local `CultureDevOps/Hyperframes` checkout,
+use the new cross-platform script (PowerShell 5.1 or 7+):
+
+```powershell
+# One command per composition: render, original sound, MP4 check, contact sheet.
+.\scripts\render_and_review.ps1 -Composition intro
+.\scripts\render_and_review.ps1 -Composition nounours
+.\scripts\render_and_review.ps1 -Composition mvc
+
+# Preview the plan without installing, rendering or writing files.
+.\scripts\render_and_review.ps1 -Composition mvc -PlanOnly
+
+# Reuse an existing local final MP4 (review only; no new rendering).
+.\scripts\render_and_review.ps1 -Composition mvc -ExistingMp4 "C:\Videos\mvc-explainer.mp4"
+```
+
+Prerequisites: **Node.js 22 + npm, Python 3, FFmpeg and FFprobe on PATH**,
+and access to the existing repository. The script runs `npm ci` using the
+committed lockfile and HyperFrames `lint`, then renders into an ignored
+temporary directory within the local checkout, generates the composition's
+original soundtrack, muxes AAC, moves the final MP4 to a private directory
+**outside the public repository**, verifies the MP4 contract and generates
+the 3×3 contact sheet with `private_visual_review.py`. Intermediate
+raw MP4, WAV and mux files are deleted even if a stage fails.
+
+Default output: `~/.hyperframes-private-review/`; use
+`-OutputDirectory "D:\Private\Hyperframes"` for another private local folder.
+The final video is uniquely named, so prior reviews aren't overwritten. The
+contact sheet and manifest live in a distinct `review-.../` child folder.
+Inspect the local final MP4 for sound and motion: a contact sheet cannot
+validate audio balance or pacing. On Windows **verify inherited NTFS ACLs**
+restrict the output, and avoid folders synced to shared cloud storage.
+
+Options: `-SkipInstall` reuses previously installed locked `node_modules`;
+`-ExistingMp4` validates and reviews an existing final MP4 without requiring
+Node or running HyperFrames; `-PlanOnly` has no side effects. On Windows the
+script invokes `npm.cmd`/`npx.cmd` to avoid PowerShell execution-policy
+problems with `npm.ps1`/`npx.ps1`, and uses the Python launcher `py -3`
+when available.
+
+**Privacy boundary:** no media upload, GitHub artifact, release, network
+publisher or automatic sharing is called. Local rendering/review and media
+storage are private by design, **but initial `npm ci` and HyperFrames Chrome
+bootstrap can download dependencies over the Internet**. This is *not* a
+guarantee of offline execution or of encrypted local storage. For a
+pre-provisioned setup, `-SkipInstall` avoids npm installation but the
+HyperFrames browser cache still needs to be present.
+
+The PR CI exercises `-PlanOnly` and performs a full PowerShell intro
+render/mux/validate/contact-sheet run on a disposable GitHub-hosted runner
+without uploading the video or review PNGs. It checks that staging files
+are cleaned up before discarding the runner. This does not substitute for a
+human local review on Windows and does not remove the known FFmpeg security
+debt described above. No new runner, package subscription, production deploy,
+video publication or merge is authorized by this step.
