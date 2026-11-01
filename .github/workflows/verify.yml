@@ -32,6 +32,12 @@ jobs:
         run: |
           npm ls hyperframes --depth=0
           npx --no-install hyperframes --help > /dev/null
+      - name: Diagnose intro HyperFrames lint (nonblocking; no render)
+        working-directory: compositions/culturedevops/intro
+        continue-on-error: true
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: '1'
+        run: npx --no-install hyperframes lint
 
   smoke-intro:
     name: Ephemeral intro smoke (no upload)
