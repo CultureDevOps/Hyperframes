@@ -27,6 +27,17 @@ try {
     $null = New-Item -ItemType Directory -Path $permissive
     $bad = Get-Acl -LiteralPath $permissive
     $bad.SetAccessRuleProtection($true, $false)
+    # Preserve owner full control so the deliberately unsafe fixture can be cleaned
+    # up without requiring elevated permissions on the disposable CI runner.
+    $current = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+    $ownerRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        $current,
+        [System.Security.AccessControl.FileSystemRights]::FullControl,
+        [System.Security.AccessControl.InheritanceFlags]::None,
+        [System.Security.AccessControl.PropagationFlags]::None,
+        [System.Security.AccessControl.AccessControlType]::Allow
+    )
+    $bad.AddAccessRule($ownerRule)
     $world = New-Object System.Security.Principal.SecurityIdentifier('S-1-1-0')
     $worldRead = New-Object System.Security.AccessControl.FileSystemAccessRule(
         $world,
