@@ -86,6 +86,11 @@ jobs:
         run: python3 scripts/verify_render.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10
       - name: Verify bundled Chrome/FFmpeg baseline
         run: python3 scripts/check_toolchain.py --check-chrome --show-sha256
+      - name: Exercise local contact-sheet extraction on ephemeral runner
+        run: |
+          umask 077
+          python3 scripts/private_visual_review.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10 --out-root "$RUNNER_TEMP/ops010-private-review"
+          test -z "$(find "$RUNNER_TEMP/ops010-private-review" -name '*.mp4' -print -quit)"
 
   smoke-other:
     name: Ephemeral ${{ matrix.composition }} smoke (no upload)
