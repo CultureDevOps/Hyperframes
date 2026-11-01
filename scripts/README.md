@@ -5,7 +5,7 @@ triggered by pushes, merges or pull requests. Video artifact upload is disabled
 by default: manual dispatch requires `upload_artifact: true` to enable
 upload. That choice must be separately authorized. When enabled, uploads are
 limited to the verified final MP4 and have a three-day retention window.
-The PR validation workflow first runs 16 Python tests and an npm locked-CLI
+The PR validation workflow first runs Python unit tests and an npm locked-CLI
 check, then runs one **real 10s intro render + soundtrack + ffprobe check** on
 a disposable GitHub-hosted runner. The smoke job runs only for pull requests,
 does not upload or retain video, and has no deployment or external publishing
