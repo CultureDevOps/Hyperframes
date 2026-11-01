@@ -16,6 +16,11 @@ on:
       - 'compositions/culturedevops/intro/index.html'
       - 'compositions/culturedevops/nounours/index.html'
       - 'compositions/culturedevops/mvc/index.html'
+      - 'scripts/render_and_review.ps1'
+      - 'scripts/private_output_acl.ps1'
+      - 'tests/test_render_and_review_ps1.py'
+      - 'tests/test_windows_acl.ps1'
+      - 'scripts/local-windows-review.md'
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +40,13 @@ jobs:
         run: python -m unittest discover -s tests -p test_verify_render.py -v
       - name: Private storyboard directory rules (offline)
         run: python -m unittest discover -s tests -p test_private_visual_review.py -v
+      - name: Validate offline PowerShell and Windows safety contract
+        run: python -m unittest discover -s tests -p test_render_and_review_ps1.py -v
+      - name: Exercise Linux PowerShell plan mode only (no media)
+        run: |
+          pwsh -NoProfile -File scripts/render_and_review.ps1 -Composition mvc -PlanOnly
+          pwsh -NoProfile -File scripts/render_and_review.ps1 -Composition intro -PlanOnly -ExistingMp4 not-opened.mp4
+
 
   lint-compositions:
     name: Pinned npm lock and composition lints (no render)
@@ -58,3 +70,32 @@ jobs:
           for composition in intro nounours mvc; do
             (cd "compositions/culturedevops/$composition" && npx --no-install hyperframes lint)
           done
+
+  test-windows-local:
+    name: Native Windows PowerShell and NTFS (no media)
+    if: github.event_name == 'pull_request'
+    needs: test-offline
+    runs-on: windows-2022
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # reviewed 2026-11-01
+      - name: Windows PowerShell 5.1 plan-only; no render
+        shell: powershell
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 5) { throw 'Expected PowerShell 5.1' }
+          .\scripts\render_and_review.ps1 -Composition intro -PlanOnly
+          .\scripts\render_and_review.ps1 -Composition mvc -PlanOnly
+          .\scripts\render_and_review.ps1 -Composition nounours -PlanOnly -ExistingMp4 not-opened.mp4
+      - name: Windows PowerShell 5.1 NTFS privacy tests (synthetic bytes)
+        shell: powershell
+        run: .\tests\test_windows_acl.ps1
+      - name: PowerShell 7 compatibility plan-only; no render
+        shell: pwsh
+        run: |
+          .\scripts\render_and_review.ps1 -Composition nounours -PlanOnly
+          .\scripts\render_and_review.ps1 -Composition intro -PlanOnly
+      - name: PowerShell 7 NTFS privacy and interruption tests (synthetic bytes)
+        shell: pwsh
+        run: .\tests\test_windows_acl.ps1
