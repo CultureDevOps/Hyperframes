@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "ubuntu_release": "24.04",
+  "apt_package": "7:6.1.1-3ubuntu5",
+  "ffmpeg_binary": "6.1.1-3ubuntu5",
+  "security_status": "known_gap_unresolved",
+  "reviewed_on": "2026-11-01",
+  "next_review_due": "2026-11-15",
+  "known_security_notice": {
+    "id": "USN-8915-1",
+    "published_on": "2026-10-12",
+    "url": "https://ubuntu.com/security/notices/USN-8915-1",
+    "fixed_apt_package": "7:6.1.1-3ubuntu5+esm15",
+    "distribution": "Ubuntu Pro / ESM Apps",
+    "availability": "Not verified on GitHub-hosted runners; no Pro activation authorized"
+  },
+  "decision": "The current main manual rendering workflows install unversioned Ubuntu FFmpeg; no secure FFmpeg baseline is enforced. Keep uploads disabled. Review packaged fixes, provenance, license and CI in a separate change before any FFmpeg version migration.",
+  "open_cve_evidence": {
+    "id": "CVE-2026-107678",
+    "checked_on": "2026-11-01",
+    "impact": "crafted MP4 MOV/PSSH input may cause stack exhaustion and denial of service",
+    "debian": {
+      "release": "trixie",
+      "apt_package": "7:7.1.5-0+deb13u1",
+      "status": "vulnerable",
+      "source": "https://security-tracker.debian.org/tracker/CVE-2026-107678"
+    },
+    "ubuntu": {
+      "noble_status": "needs_evaluation",
+      "resolute_status": "needs_evaluation",
+      "source": "https://ubuntu.com/security/CVE-2026-107678"
+    },
+    "scope": "This CVE is separate from USN-8915-1. No untrusted MP4 input is authorized and no candidate baseline is declared fixed.",
+    "status": "unresolved",
+    "upstream": {
+      "repository": "FFmpeg/FFmpeg",
+      "source_url": "https://github.com/FFmpeg/FFmpeg/commit/969c7eb091989a664cb7bf66a1f02051cc46cb52",
+      "fix_commit": "969c7eb091989a664cb7bf66a1f02051cc46cb52",
+      "commit_date": "2026-10-19",
+      "file": "libavutil/encryption_info.c",
+      "change": "av_encryption_init_info_free iterative loop replaces recursive free; addresses stack exhaustion, no claim on all CVE impacts",
+      "verified_on": "2026-11-01",
+      "source_branch": "master",
+      "master_file_sha": "9643840157fad0aac1004595cf1fcc5e6195bb46",
+      "release_branches_recursion_present": {
+        "release/7.1": "e4ff015b3713c43bb9a6f6285bdafbe934a3dee3",
+        "release/8.0": "e4ff015b3713c43bb9a6f6285bdafbe934a3dee3",
+        "release/8.1": "a3eb955d2de5309ebfe1183d09ebd31892dbfcd5",
+        "release/9.0": "a3eb955d2de5309ebfe1183d09ebd31892dbfcd5"
+      },
+      "distribution_status": "UPSTREAM_MASTER_COMMIT_EXISTS_BUT_NO_VERIFIED_DISTRO_PACKAGE_FIX",
+      "gate": "Require signed/reviewed distro package changelog fixing this CVE, package eligibility, sandbox, and separate CI validation before changing baseline"
+    }
+  },
+  "remediation_gate": "Upstream iterative-free commit on master is not equivalent to a released/backported fix. Debian Trixie package still tracked vulnerable; Ubuntu noble/resolute need evaluation. Confirm official patched distribution package/version plus trust and CI before changing any FFmpeg baseline; no Ubuntu Pro activation or untrusted media.",
+  "workflow_install_mode": "unversioned_legacy_manual",
+  "evidence_scope": "Snapshot of 2026-11-01 vendor pages and former PR #1 runner, not a deployed or secured main baseline; current manual main workflows use unversioned FFmpeg APT."
+}

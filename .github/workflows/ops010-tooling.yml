@@ -20,6 +20,10 @@ on:
       - 'scripts/private_output_acl.ps1'
       - 'tests/test_render_and_review_ps1.py'
       - 'tests/test_windows_acl.ps1'
+      - 'scripts/ffmpeg-security-policy.json'
+      - 'scripts/audit_ffmpeg_security.py'
+      - 'tests/test_ffmpeg_security_audit.py'
+      - 'scripts/ffmpeg-audit.md'
       - 'scripts/local-windows-review.md'
   workflow_dispatch:
 permissions:
@@ -42,6 +46,10 @@ jobs:
         run: python -m unittest discover -s tests -p test_private_visual_review.py -v
       - name: Validate offline PowerShell and Windows safety contract
         run: python -m unittest discover -s tests -p test_render_and_review_ps1.py -v
+      - name: Validate dated FFmpeg evidence and unresolved security debt (offline)
+        run: python3 scripts/audit_ffmpeg_security.py
+      - name: Test FFmpeg evidence gate fail-closed behavior
+        run: python -m unittest discover -s tests -p test_ffmpeg_security_audit.py -v
       - name: Exercise Linux PowerShell plan mode only (no media)
         run: |
           pwsh -NoProfile -File scripts/render_and_review.ps1 -Composition mvc -PlanOnly
