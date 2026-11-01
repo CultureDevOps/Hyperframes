@@ -21,8 +21,8 @@ steps. This verifies technical render output, **not visual composition quality**
   downloadable packages. Both PR smoke and renders install using `npm ci`.
 - Node.js 22 on GitHub-hosted `ubuntu-24.04` runners.
 - `HYPERFRAMES_NO_UPDATE_CHECK=1` prevents the CLI update check/auto-install.
-- FFmpeg is requested as **`ffmpeg=6.1.1-3ubuntu5`** via Ubuntu 24.04
-  apt, then the validator checks both FFmpeg and FFprobe versions. If this
+- FFmpeg is requested as **`ffmpeg=7:6.1.1-3ubuntu5`** via Ubuntu 24.04
+  apt (Debian package epoch `7:`), then the validator checks both FFmpeg and FFprobe versions. If this
   apt version disappears from the mirror, the CI fails instead of drifting.
 - HyperFrames installs its pinned Chrome Headless Shell binary; after each
   ephemeral render the validator checks the executable's version equals
