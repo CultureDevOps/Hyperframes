@@ -40,16 +40,16 @@ jobs:
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
         run: npx --no-install hyperframes lint
-      - name: Diagnose MVC lint without rendering
+      - name: Lint MVC composition (required; no render)
         working-directory: compositions/culturedevops/mvc
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
-        run: npx --no-install hyperframes lint || true
-      - name: Diagnose Nounours lint without rendering
+        run: npx --no-install hyperframes lint
+      - name: Lint Nounours composition (required; no render)
         working-directory: compositions/culturedevops/nounours
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
-        run: npx --no-install hyperframes lint || true
+        run: npx --no-install hyperframes lint
 
   smoke-intro:
     name: Ephemeral intro smoke (no upload)
@@ -64,8 +64,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install pinned FFmpeg and verify baseline
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg=6.1.1-3ubuntu5
+          python3 scripts/check_toolchain.py
       - name: Install pinned HyperFrames
         run: npm ci --no-audit --no-fund
       - name: Render intro on disposable runner (never uploaded)
@@ -81,3 +84,53 @@ jobs:
           mv renders/culturedevops-with-sound.mp4 renders/culturedevops-intro.mp4
       - name: Check final ephemeral MP4 contract
         run: python3 scripts/verify_render.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10
+      - name: Verify bundled Chrome/FFmpeg baseline
+        run: python3 scripts/check_toolchain.py --check-chrome
+
+  smoke-other:
+    name: Ephemeral ${{ matrix.composition }} smoke (no upload)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - composition: nounours
+            filename: nounours-antoine-dany.mp4
+            generator: generate_teddy_soundtrack.py
+            seconds: 10
+          - composition: mvc
+            filename: mvc-explainer.mp4
+            generator: generate_mvc_soundtrack.py
+            seconds: 35
+    env:
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned FFmpeg and verify baseline
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg=6.1.1-3ubuntu5
+          python3 scripts/check_toolchain.py
+      - name: Install pinned HyperFrames
+        run: npm ci --no-audit --no-fund
+      - name: Render disposable ${{ matrix.composition }} MP4 (never uploaded)
+        working-directory: compositions/culturedevops/${{ matrix.composition }}
+        run: npx --no-install hyperframes render --output renders/${{ matrix.filename }} --fps 30 --quality high
+      - name: Mux original music on disposable runner
+        working-directory: compositions/culturedevops/${{ matrix.composition }}
+        run: |
+          python3 ../../../scripts/${{ matrix.generator }} soundtrack.wav
+          ffmpeg -y -i renders/${{ matrix.filename }} -i soundtrack.wav \
+            -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k \
+            -t ${{ matrix.seconds }} -movflags +faststart renders/with-sound.mp4
+          mv renders/with-sound.mp4 renders/${{ matrix.filename }}
+      - name: Validate ephemeral final MP4
+        run: python3 scripts/verify_render.py compositions/culturedevops/${{ matrix.composition }}/renders/${{ matrix.filename }} --seconds ${{ matrix.seconds }}
+      - name: Verify bundled Chrome/FFmpeg baseline
+        run: python3 scripts/check_toolchain.py --check-chrome

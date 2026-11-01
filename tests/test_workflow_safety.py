@@ -36,6 +36,30 @@ class WorkflowSafetyTests(unittest.TestCase):
         self.assertIn('<main class="stage" data-no-timeline', html)
         self.assertNotIn("window.__timelines", html)
 
+    def test_all_css_only_compositions_are_declared(self):
+        for name in ("intro", "mvc", "nounours"):
+            with self.subTest(name=name):
+                html = (ROOT / "compositions" / "culturedevops" / name / "index.html").read_text()
+                self.assertIn('<main class="stage" data-no-timeline', html)
+                self.assertNotIn("window.__timelines", html)
+
+    def test_ci_lints_all_three_without_bypass(self):
+        contents = (ROOT / ".github" / "workflows" / "verify.yml").read_text()
+        for name in ("intro", "mvc", "nounours"):
+            self.assertIn("compositions/culturedevops/" + name + "/**", contents)
+            self.assertIn("working-directory: compositions/culturedevops/" + name, contents)
+        self.assertEqual(contents.count("run: npx --no-install hyperframes lint"), 3)
+        self.assertNotIn("continue-on-error: true", contents)
+        self.assertNotIn("lint || true", contents)
+
+    def test_other_compositions_have_ephemeral_smoke_without_upload(self):
+        contents = (ROOT / ".github" / "workflows" / "verify.yml").read_text()
+        self.assertIn("smoke-other:", contents)
+        self.assertIn("composition: nounours", contents)
+        self.assertIn("composition: mvc", contents)
+        self.assertNotIn("upload-artifact", contents)
+        self.assertNotIn("upload_artifact", contents)
+
     def test_pr_smoke_is_ephemeral_without_upload(self):
         contents = (ROOT / ".github" / "workflows" / "verify.yml").read_text()
         self.assertIn("pull_request:", contents)
