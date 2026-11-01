@@ -42,16 +42,14 @@ jobs:
         run: npx --no-install hyperframes lint
       - name: Diagnose MVC lint without rendering
         working-directory: compositions/culturedevops/mvc
-        continue-on-error: true
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
-        run: npx --no-install hyperframes lint
+        run: npx --no-install hyperframes lint || true
       - name: Diagnose Nounours lint without rendering
         working-directory: compositions/culturedevops/nounours
-        continue-on-error: true
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
-        run: npx --no-install hyperframes lint
+        run: npx --no-install hyperframes lint || true
 
   smoke-intro:
     name: Ephemeral intro smoke (no upload)
