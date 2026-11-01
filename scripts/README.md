@@ -5,8 +5,11 @@ triggered by pushes, merges or pull requests. Video artifact upload is disabled
 by default: manual dispatch requires `upload_artifact: true` to enable
 upload. That choice must be separately authorized. When enabled, uploads are
 limited to the verified final MP4 and have a three-day retention window.
-The PR validation workflow runs Python tests and a no-render CLI smoke test;
-it never uploads artifacts.
+The PR validation workflow first runs 16 Python tests and an npm locked-CLI
+check, then runs one **real 10s intro render + soundtrack + ffprobe check** on
+a disposable GitHub-hosted runner. The smoke job runs only for pull requests,
+does not upload or retain video, and has no deployment or external publishing
+steps. This verifies technical render output, **not visual composition quality**.
 
 ## Toolchain reference
 
@@ -23,8 +26,7 @@ it never uploads artifacts.
 Merging this PR will **not** trigger a render on `main` because the three
 render workflows have no `push` or `pull_request` trigger. A manual dispatch
 is still an explicit operation and artifact upload remains opt-in. Merging
-is separately permissioned. A green no-video CLI smoke test does not prove
-the visual output.
+is separately permissioned. The PR smoke checks MP4 technical properties; it does not prove visual pacing.
 
 ## Validate
 
@@ -39,6 +41,6 @@ The shared `ffprobe` check requires nonempty MP4 output with 1920x1080 video,
 30 fps (+/- 0.05), AAC audio and the intended 10s or 35s duration (+/- 0.25s).
 Failures identify the violated contract.
 
-Remaining work: validate a real ephemeral render/visual pacing with the pinned toolchain,
+Remaining work: manually review visual pacing using an approved non-publication method,
 consider digest-pinning GitHub Actions and an FFmpeg/Chrome distribution strategy,
 and review artifact retention. No byte-for-byte video reproducibility is claimed.

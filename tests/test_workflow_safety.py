@@ -27,11 +27,18 @@ class WorkflowSafetyTests(unittest.TestCase):
                 self.assertNotIn("**/*.mp4", contents)
                 self.assertIn("retention-days: 3", contents)
 
-    def test_pr_validation_workflow_does_not_render_or_upload(self):
+    def test_pr_smoke_is_ephemeral_without_upload(self):
         contents = (ROOT / ".github" / "workflows" / "verify.yml").read_text()
         self.assertIn("pull_request:", contents)
-        self.assertNotIn("hyperframes render", contents)
+        self.assertNotIn("  push:", contents)
+        self.assertIn("smoke-intro:", contents)
+        self.assertIn("if: github.event_name == 'pull_request'", contents)
+        self.assertIn("needs: test", contents)
+        self.assertIn("hyperframes render --output", contents)
+        self.assertIn("scripts/verify_render.py", contents)
         self.assertNotIn("upload-artifact", contents)
+        self.assertNotIn("upload_artifact", contents)
+        self.assertNotIn("workflow_run:", contents)
 
 
 if __name__ == "__main__":

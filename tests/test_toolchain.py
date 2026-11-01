@@ -31,11 +31,12 @@ class PinnedToolchainTests(unittest.TestCase):
                 self.assertNotIn("npm install --no-audit --no-fund", text)
                 self.assertIn("HYPERFRAMES_NO_UPDATE_CHECK:", text)
 
-    def test_pull_request_checks_install_without_render(self):
+    def test_pr_checks_locked_cli_and_ephemeral_smoke(self):
         text = (ROOT / ".github" / "workflows" / "verify.yml").read_text()
-        self.assertIn("npm ci --no-audit --no-fund", text)
+        self.assertGreaterEqual(text.count("npm ci --no-audit --no-fund"), 2)
         self.assertIn("npx --no-install hyperframes --help", text)
-        self.assertNotIn("hyperframes render", text)
+        self.assertIn("hyperframes render", text)
+        self.assertIn("github.event_name == 'pull_request'", text)
         self.assertNotIn("upload-artifact", text)
 
 

@@ -1,4 +1,4 @@
-name: Validate render tooling (no video)
+name: Validate render tooling and ephemeral MP4 smoke
 on:
   pull_request:
     paths:
@@ -32,3 +32,34 @@ jobs:
         run: |
           npm ls hyperframes --depth=0
           npx --no-install hyperframes --help > /dev/null
+
+  smoke-intro:
+    name: Ephemeral intro smoke (no upload)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install pinned HyperFrames
+        run: npm ci --no-audit --no-fund
+      - name: Render intro on disposable runner (never uploaded)
+        working-directory: compositions/culturedevops/intro
+        run: npx --no-install hyperframes render --output renders/culturedevops-intro.mp4 --fps 30 --quality high
+      - name: Mux original soundtrack
+        working-directory: compositions/culturedevops/intro
+        run: |
+          python3 ../../../scripts/generate_soundtrack.py soundtrack.wav
+          ffmpeg -y -i renders/culturedevops-intro.mp4 -i soundtrack.wav \
+            -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k \
+            -t 10 -movflags +faststart renders/culturedevops-with-sound.mp4
+          mv renders/culturedevops-with-sound.mp4 renders/culturedevops-intro.mp4
+      - name: Check final ephemeral MP4 contract
+        run: python3 scripts/verify_render.py compositions/culturedevops/intro/renders/culturedevops-intro.mp4 --seconds 10
