@@ -7,6 +7,7 @@ on:
       - 'tests/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'compositions/culturedevops/intro/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,9 +33,8 @@ jobs:
         run: |
           npm ls hyperframes --depth=0
           npx --no-install hyperframes --help > /dev/null
-      - name: Diagnose intro HyperFrames lint (nonblocking; no render)
+      - name: Lint intro composition (required; no render)
         working-directory: compositions/culturedevops/intro
-        continue-on-error: true
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: '1'
         run: npx --no-install hyperframes lint

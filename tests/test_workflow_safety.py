@@ -27,6 +27,15 @@ class WorkflowSafetyTests(unittest.TestCase):
                 self.assertNotIn("**/*.mp4", contents)
                 self.assertIn("retention-days: 3", contents)
 
+    def test_intro_lint_required_and_css_only_timeline_opt_out(self):
+        contents = (ROOT / ".github" / "workflows" / "verify.yml").read_text()
+        self.assertIn("compositions/culturedevops/intro/**", contents)
+        self.assertIn("run: npx --no-install hyperframes lint", contents)
+        self.assertNotIn("continue-on-error: true", contents)
+        html = (ROOT / "compositions" / "culturedevops" / "intro" / "index.html").read_text()
+        self.assertIn('<main class="stage" data-no-timeline', html)
+        self.assertNotIn("window.__timelines", html)
+
     def test_pr_smoke_is_ephemeral_without_upload(self):
         contents = (ROOT / ".github" / "workflows" / "verify.yml").read_text()
         self.assertIn("pull_request:", contents)

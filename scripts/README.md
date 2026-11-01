@@ -5,8 +5,8 @@ triggered by pushes, merges or pull requests. Video artifact upload is disabled
 by default: manual dispatch requires `upload_artifact: true` to enable
 upload. That choice must be separately authorized. When enabled, uploads are
 limited to the verified final MP4 and have a three-day retention window.
-The PR validation workflow first runs Python unit tests and an npm locked-CLI
-check, then runs one **real 10s intro render + soundtrack + ffprobe check** on
+The PR validation workflow first runs Python unit tests, a locked-CLI check
+and **required `hyperframes lint`** for the intro, then runs one **real 10s intro render + soundtrack + ffprobe check** on
 a disposable GitHub-hosted runner. The smoke job runs only for pull requests,
 does not upload or retain video, and has no deployment or external publishing
 steps. This verifies technical render output, **not visual composition quality**.
@@ -44,3 +44,11 @@ Failures identify the violated contract.
 Remaining work: manually review visual pacing using an approved non-publication method,
 consider digest-pinning GitHub Actions and an FFmpeg/Chrome distribution strategy,
 and review artifact retention. No byte-for-byte video reproducibility is claimed.
+
+## CSS-only timeline declaration
+
+The intro's root `<main data-no-timeline>` explicitly opts out of HyperFrames'
+JavaScript `window.__timelines` registry because all scene timing uses CSS
+keyframe animations. This resolves the observed `missing_timeline_registry`
+and `missing_data_no_timeline` diagnostics without altering the storyboard.
+The required CI lint will fail if either issue returns.
