@@ -11,6 +11,11 @@ on:
       - '.github/workflows/nounours.yml'
       - '.github/workflows/mvc.yml'
       - 'tests/test_render_workflow_policy.py'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'compositions/culturedevops/intro/index.html'
+      - 'compositions/culturedevops/nounours/index.html'
+      - 'compositions/culturedevops/mvc/index.html'
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,3 +35,26 @@ jobs:
         run: python -m unittest discover -s tests -p test_verify_render.py -v
       - name: Private storyboard directory rules (offline)
         run: python -m unittest discover -s tests -p test_private_visual_review.py -v
+
+  lint-compositions:
+    name: Pinned npm lock and composition lints (no render)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    env:
+      HYPERFRAMES_NO_UPDATE_CHECK: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # reviewed 2026-11-01
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # reviewed 2026-11-01
+        with:
+          node-version: '22'
+      - name: Install immutable npm dependency tree
+        run: npm ci --no-audit --no-fund
+      - name: Verify HyperFrames exact package
+        run: npm ls hyperframes --depth=0
+      - name: Lint all three compositions without rendering
+        run: |
+          for composition in intro nounours mvc; do
+            (cd "compositions/culturedevops/$composition" && npx --no-install hyperframes lint)
+          done
