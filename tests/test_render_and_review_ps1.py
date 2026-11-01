@@ -58,7 +58,7 @@ class PowerShellLocalReviewTests(unittest.TestCase):
         self.assertIn("-Composition intro -SkipInstall", workflow)
         self.assertIn("-Composition mvc -PlanOnly", workflow)
         self.assertIn("test-windows-local:", workflow)
-        self.assertIn("tests/test_windows_acl.ps1", workflow)
+        self.assertRegex(workflow, r"tests[/\\]test_windows_acl\.ps1")
         self.assertNotIn("upload-artifact", workflow)
         self.assertNotIn("upload_artifact", workflow)
 
