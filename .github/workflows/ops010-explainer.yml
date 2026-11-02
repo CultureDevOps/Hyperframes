@@ -93,8 +93,8 @@ jobs:
       github.event.pull_request.number == 10 &&
       github.event.pull_request.head.repo.full_name == 'CultureDevOps/Hyperframes' &&
       github.event.pull_request.head.ref == 'ops010/chatgpt-gitlab-explainer-720p-20261102' &&
-      contains(github.event.pull_request.body, 'OPS010_PUBLIC_PIPER_VIDEO_APPROVED_20261102') &&
-      !contains(github.event.changes.body.from, 'OPS010_PUBLIC_PIPER_VIDEO_APPROVED_20261102')
+      contains(github.event.pull_request.body, 'OPS010_PUBLIC_FR_IT_FULL_VIDEO_APPROVED_20261102') &&
+      !contains(github.event.changes.body.from, 'OPS010_PUBLIC_FR_IT_FULL_VIDEO_APPROVED_20261102')
     needs: explainer-offline
     runs-on: ubuntu-24.04
     timeout-minutes: 55
@@ -131,6 +131,7 @@ jobs:
           python scripts/render_chatgpt_gitlab.py \
             --voice piper \
             --piper-model "$RUNNER_TEMP/fr_FR-siwis-medium.onnx" \
+            --pronunciation-trial \
             --output "$RUNNER_TEMP/continuityops-chatgpt-gitlab-piper-720p.mp4"
           test -s "$RUNNER_TEMP/continuityops-chatgpt-gitlab-piper-720p.mp4"
           test -s "$RUNNER_TEMP/continuityops-chatgpt-gitlab-piper-720p.srt"
@@ -143,7 +144,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          tag="ops010-piper-preview-${HEAD_SHA:0:12}"
+          tag="ops010-piper-fr-it-preview-${HEAD_SHA:0:12}"
           if gh release view "$tag" --repo CultureDevOps/Hyperframes >/dev/null 2>&1; then
             echo "Release tag already exists, refusing replacement: $tag"
             exit 1
@@ -153,8 +154,8 @@ jobs:
             "$RUNNER_TEMP/continuityops-chatgpt-gitlab-piper-720p.srt" \
             --repo CultureDevOps/Hyperframes \
             --target "$HEAD_SHA" \
-            --title "ContinuityOps - ChatGPT GitLab, Piper FR (review preview)" \
-            --notes "Preview 720p/30fps, French neural Piper Siwis voice, 8 chapters, subtitles and original music. Public review only, not production. Synthetic public editorial content, no secrets. Source: PR #10 at $HEAD_SHA. Speech: SIWIS French Speech Synthesis Database (2017), Yamagishi, Honnet, Garner and Lazaridis, University of Edinburgh; Piper contributors. Voice dataset CC BY 4.0; Piper engine GPL-3.0-or-later. The FFmpeg security debt remains open; no claim of full remediated baseline." \
+            --title "ContinuityOps - doublage Piper FR-IT corrige (revue)" \
+            --notes "Preview 720p/30fps, French neural Piper Siwis voice, 9 chapters, corrected FR-IT pronunciations (ChatGPT, pipeline), subtitles and original music. Public review only, not production. Synthetic public editorial content, no secrets. Source: PR #10 at $HEAD_SHA. Speech: SIWIS French Speech Synthesis Database (2017), Yamagishi, Honnet, Garner and Lazaridis, University of Edinburgh; Piper contributors. Voice dataset CC BY 4.0; Piper engine GPL-3.0-or-later. The FFmpeg security debt remains open; no claim of full remediated baseline." \
             --prerelease
           echo "PUBLIC_PREVIEW_RELEASE_OK tag=$tag source=$HEAD_SHA"
 
@@ -198,7 +199,7 @@ jobs:
         run: |
           set -euo pipefail
           trap 'rm -f "$RUNNER_TEMP/continuityops-starter-ci.mp4" "$RUNNER_TEMP/continuityops-starter-ci.srt"' EXIT
-          python scripts/render_chatgpt_gitlab.py --voice piper --piper-model "$RUNNER_TEMP/fr_FR-siwis-medium.onnx" --output "$RUNNER_TEMP/continuityops-starter-ci.mp4"
+          python scripts/render_chatgpt_gitlab.py --voice piper --pronunciation-trial --piper-model "$RUNNER_TEMP/fr_FR-siwis-medium.onnx" --output "$RUNNER_TEMP/continuityops-starter-ci.mp4"
           python - <<'PY'
           import json, os, subprocess
           from pathlib import Path
@@ -213,6 +214,10 @@ jobs:
           assert 300<=duration<=430, f'Unexpected narration-led duration: {duration}'
           srt=path.with_suffix('.srt')
           assert srt.is_file() and '-->' in srt.read_text(encoding='utf8')
+          captions=srt.read_text(encoding='utf8')
+          assert 'ChatGPT' in captions and 'pipeline' in captions
+          for speech_only in ('tchatte gé pé té', 'paille peu laïne', 'guite lab'):
+              assert speech_only not in captions, f'Audio pronunciation leaked into SRT: {speech_only}'
           print(f'OPS010_FULL_NEURAL_VERIFIED duration={duration:.3f}s size={path.stat().st_size} 1280x720 30fps H264 AAC SRT; no artifact')
           PY
 
