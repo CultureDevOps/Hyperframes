@@ -50,7 +50,7 @@ def narration(work, engine):
             engine.wav(phrase, p)
             with wave.open(str(p),'rb') as w:
                 if w.getnchannels()!=1 or w.getsampwidth()!=2 or w.getframerate()!=RATE:
-                    raise RuntimeError('Unexpected eSpeak PCM format')
+                    raise RuntimeError('Unexpected narration PCM format')
                 frames=w.readframes(w.getnframes());n=w.getnframes()
             samples=array.array('h');samples.frombytes(frames)
             if __import__('sys').byteorder!='little':samples.byteswap()
@@ -68,7 +68,11 @@ async def images(work):
     from playwright.async_api import async_playwright
     html=(COMPOSITION/'index.html').read_text(encoding='utf-8')
     async with async_playwright() as p:
-        browser=await p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage','--disable-gpu'])
+        browser_options=dict(headless=True,args=['--no-sandbox','--disable-dev-shm-usage','--disable-gpu'])
+        system_chromium=Path('/usr/bin/chromium')
+        if system_chromium.is_file():
+            browser_options['executable_path']=str(system_chromium)
+        browser=await p.chromium.launch(**browser_options)
         try:
             page=await browser.new_page(viewport={'width':1280,'height':720},device_scale_factor=1)
             await page.set_content(html,wait_until='load')
