@@ -215,3 +215,110 @@ jobs:
           assert srt.is_file() and '-->' in srt.read_text(encoding='utf8')
           print(f'OPS010_FULL_NEURAL_VERIFIED duration={duration:.3f}s size={path.stat().st_size} 1280x720 30fps H264 AAC SRT; no artifact')
           PY
+
+  audio-ab-review-release:
+    # Public short synthetic samples ONLY following explicit one-off PR approval.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'edited' &&
+      github.event.pull_request.number == 10 &&
+      github.event.pull_request.head.repo.full_name == 'CultureDevOps/Hyperframes' &&
+      github.event.pull_request.head.ref == 'ops010/chatgpt-gitlab-explainer-720p-20261102' &&
+      contains(github.event.pull_request.body, 'OPS010_PUBLIC_FR_IT_AB_APPROVED_20261102') &&
+      !contains(github.event.changes.body.from, 'OPS010_PUBLIC_FR_IT_AB_APPROVED_20261102')
+    needs: explainer-offline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Install pinned Piper, not cloud TTS
+        run: python -m pip install --disable-pip-version-check 'piper-tts==1.8.0'
+      - name: Download pinned French voice and check checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://huggingface.co/rhasspy/piper-voices/resolve/d5de91c972ba5a13cea0e77a63fda1623faac2c1/fr/fr_FR/siwis/medium'
+          curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx"
+          curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx.json" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx.json"
+          echo '641d1ab097da2b81128c076810edb052b385decc8be3381814802a64a73baf99  '"$RUNNER_TEMP/fr_FR-siwis-medium.onnx" | sha256sum --check
+      - name: Synthesize and verify original and French technical variants
+        shell: bash
+        env:
+          OPS010_MODEL: ${{ runner.temp }}/fr_FR-siwis-medium.onnx
+          OPS010_OUTPUT: ${{ runner.temp }}/ops010-fr-it-review
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, os, sys, wave
+          sys.path.insert(0, 'scripts')
+          from ops010_voice import load_voice
+          from ops010_pronunciation import speech_for_fr_it, read_lexicon
+          destination=Path(os.environ['OPS010_OUTPUT'])
+          destination.mkdir(parents=True, exist_ok=False)
+          phrase=("Le HUB utilise GitLab et GitHub. Docker et Kubernetes "
+                  "fonctionnent avec la CI/CD. ChatGPT et Codex vérifient "
+                  "le SHA et le MCP. Ce langage DevOps reste technique.")
+          modified=speech_for_fr_it(phrase)
+          assert modified != phrase
+          engine=load_voice('piper',Path(os.environ['OPS010_MODEL']))
+          files=[destination/'01-original-piper-fr.wav', destination/'02-lexique-technique-fr.wav']
+          engine.wav(phrase,files[0])
+          engine.pronunciation_trial=True
+          engine.wav(phrase,files[1])
+          durations=[]
+          for path in files:
+              with wave.open(str(path),'rb') as audio:
+                  assert (audio.getframerate(),audio.getnchannels(),audio.getsampwidth()) == (22050,1,2)
+                  seconds=audio.getnframes()/22050
+                  assert 6 <= seconds <= 60, seconds
+                  durations.append(round(seconds,3))
+          assert hashlib.sha256(files[0].read_bytes()).digest()!=hashlib.sha256(files[1].read_bytes()).digest()
+          lexicon=read_lexicon()
+          (destination/'README.txt').write_text(
+              "OPS-010 - EXTRAITS COMPARATIFS (experimentaux)\n"+
+              "Meme phrase, meme voix Piper Siwis francaise, deux traitements du texte.\n"+
+              "Prononciations experimentales : non validees par ecoute humaine.\n"+
+              "PHRASE DE REFERENCE :\n"+phrase+"\n"+
+              "PREPARATION VOCALE EXPERIMENTALE (PAS DES SOUS-TITRES) :\n"+modified+"\n"+
+              "Dictionnaire de reference MIT : anzy-renlab-ai/pronounce @ "+
+              lexicon['source']['commit']+"\n"+
+              "Copyright (c) 2026 say-it contributors ; licence MIT.\n"+
+              "La diffusion du Starter Kit prive et du film complet n'est pas autorisee par ce test.\n",
+              encoding='utf-8'
+          )
+          print(f"OPS010_PUBLIC_AB_VALIDATED original={durations[0]}s trial={durations[1]}s PCM_22050_MONO")
+          for path in files:
+              print(f"SHA256 {hashlib.sha256(path.read_bytes()).hexdigest()} {path.name}")
+          PY
+      - name: Publish review-only public prerelease at exact SHA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          OPS010_OUTPUT: ${{ runner.temp }}/ops010-fr-it-review
+        run: |
+          set -euo pipefail
+          tag="ops010-fr-it-ab-${SOURCE_SHA:0:12}"
+          if gh release view "$tag" --repo CultureDevOps/Hyperframes >/dev/null 2>&1; then
+            echo "Already published; refusing to overwrite $tag"
+            exit 1
+          fi
+          gh release create "$tag" \
+            "$OPS010_OUTPUT/01-original-piper-fr.wav" \
+            "$OPS010_OUTPUT/02-lexique-technique-fr.wav" \
+            "$OPS010_OUTPUT/README.txt" \
+            --repo CultureDevOps/Hyperframes \
+            --target "$SOURCE_SHA" \
+            --title "OPS-010 : extraits vocaux français IT - comparaison Piper A/B" \
+            --notes "Deux WAV comparatifs courts, même voix Piper Siwis française, synthèse originale vs lexique FR-IT expérimental, écoute humaine demandée. Il ne s'agit pas d'une nouvelle vidéo complète ni d'une validation de la prononciation. Source de référence dictionnaire MIT : anzy-renlab-ai/pronounce commit 138cb7e717d3f73e3aa80d879a99a2ebd989981f ; copyright (c) 2026 say-it contributors. Modèle voix Siwis CC BY 4.0 ; Piper GPL-3.0-or-later. GitHub PR #10 HEAD $SOURCE_SHA. Aucune production ni fusion." \
+            --prerelease
+          echo "OPS010_PUBLIC_AB_RELEASE_OK tag=$tag sha=$SOURCE_SHA"
