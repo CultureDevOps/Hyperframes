@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "language": "fr",
+  "source": "OPS-028 V2.2 — adaptation fictive et publiable, sans donnees privees",
+  "scenes": [
+    {
+      "id": "probleme", "title": "Le vrai problème n'est pas le code", "kicker": "01 / LE CONSTAT",
+      "lines": [
+        "Imaginez trois chantiers, lancés en parallèle avec des assistants d'intelligence artificielle.",
+        "Le premier corrige une intégration continue. Le deuxième ajoute une fonctionnalité. Le troisième examine les droits d'accès.",
+        "Chaque assistant peut écrire du code, consulter de la documentation et proposer des corrections. Pourtant, un détail manque souvent : la continuité entre les sessions.",
+        "À dix heures, une conversation se termine. Le lendemain, une autre reprend. Quelles décisions ont été prises ? Qu'est-ce qui a vraiment été testé ?",
+        "Une réponse dans un chat n'est pas une preuve qu'un changement a été fusionné. Une phrase comme presque terminé ne remplace pas un état vérifiable.",
+        "Le défi n'est donc pas de trouver un assistant toujours plus puissant. C'est d'organiser le travail pour pouvoir le reprendre sans perdre les faits."
+      ],
+      "cards": ["CI en échec", "Fonctionnalité", "Audit sécurité"],
+      "footer": "Trois chantiers · Une interruption · Plusieurs décisions"
+    },
+    {
+      "id": "rupture", "title": "Quand la conversation s'interrompt", "kicker": "02 / L'ÉCHEC CONCRET",
+      "lines": [
+        "Sans protocole commun, la reprise peut tourner à l'enquête.",
+        "Il faut retrouver la bonne discussion, reconstruire les choix précédents, puis vérifier si la branche a changé entre-temps.",
+        "On risque de relancer des tests déjà réussis, de corriger une ancienne version, ou de contredire une décision d'architecture.",
+        "Cette difficulté existe avec ChatGPT, Codex et Claude Code. Elle ne vient pas d'une faiblesse propre à un modèle.",
+        "Supposons que le chantier sécurité attende une approbation humaine. Un nouvel assistant ne doit pas transformer cette attente en autorisation implicite.",
+        "Ce qu'il faut partager, ce n'est pas toute la conversation. C'est un état compact : objectif, périmètre, décisions, preuves, risques et prochaine action."
+      ],
+      "cards": ["Retrouver", "Reconstituer", "Revérifier"],
+      "footer": "Un ancien message ≠ l'état actuel du dépôt"
+    },
+    {
+      "id": "architecture", "title": "Le HUB pilote. Les satellites exécutent.", "kicker": "03 / ARCHITECTURE",
+      "lines": [
+        "Voici une organisation que nous appelons, provisoirement, ContinuityOps.",
+        "Au centre, un HUB gère les priorités, les arbitrages et les dépendances entre les chantiers.",
+        "Chaque satellite possède une issue précise, un périmètre limité, et idéalement une branche de travail dédiée.",
+        "Les conversations ne se transmettent pas magiquement leurs résultats. Elles utilisent un registre partagé dans GitLab.",
+        "Ce registre contient les décisions durables, les issues, les checkpoints et les preuves de livraison : commits, demandes de fusion et pipelines.",
+        "GitLab ne remplace pas les assistants. Il leur fournit un état externe consultable, même lorsqu'une conversation a disparu ou qu'un poste est éteint.",
+        "Et les frontières sont essentielles : deux satellites ne doivent pas modifier simultanément la même branche sans coordination."
+      ],
+      "cards": ["HUB", "SATELLITES OPS", "GITLAB / GITHUB"],
+      "footer": "Un état partagé, des responsabilités séparées"
+    },
+    {
+      "id": "protocole", "title": "REPRENDRE → AGIR → CHECKPOINT", "kicker": "04 / LE MÉCANISME",
+      "lines": [
+        "Le protocole est volontairement simple : reprendre, agir, puis consigner un checkpoint.",
+        "D'abord, on lit la dernière note significative de l'issue. Ensuite, on vérifie le HEAD Git, la demande de fusion et son pipeline.",
+        "Si le code n'a pas changé, inutile de refaire toute l'analyse et tous les tests déjà validés au même commit.",
+        "On réalise l'incrément suivant : une correction, un test, une nouvelle branche ou une demande de fusion, selon le mandat.",
+        "Puis on écrit un checkpoint court. Il indique le SHA exact, les résultats de CI, les limites, les actions interdites et la prochaine étape.",
+        "Attention : un checkpoint ancien ne devient pas vrai par magie. Lors d'une nouvelle reprise, on vérifie toujours ce qui a changé depuis sa rédaction.",
+        "Ce mécanisme transforme une succession de discussions en un travail traçable, vérifiable et récupérable."
+      ],
+      "cards": ["REPRENDRE", "AGIR", "CHECKPOINT"],
+      "footer": "Issue → HEAD → MR → CI → prochaine action"
+    },
+    {
+      "id": "demo", "title": "Du téléphone jusqu'à la CI", "kicker": "05 / DÉMONSTRATION FICTIVE",
+      "lines": [
+        "Prenons une situation fictive. Vous êtes dans le train, avec votre téléphone. Votre ordinateur personnel est éteint.",
+        "Vous demandez à ChatGPT classique de reprendre une issue GitLab et de lire le dernier checkpoint.",
+        "Par un connecteur distant, l'assistant récupère l'issue, compare le dernier commit et prépare une modification autorisée.",
+        "Il peut ouvrir une demande de fusion. Puis GitLab Actions ou GitHub Actions exécutent les tests de manière déterministe sur un runner distant.",
+        "Le téléphone n'exécute ni la compilation ni les tests. Le poste local n'est pas dans ce chemin critique.",
+        "La CI n'a pas besoin d'appeler un modèle pour vérifier une assertion Python, compiler une application ou produire un rapport ffprobe.",
+        "Le résultat reste dans Git : un SHA, une demande de fusion, un pipeline, puis un checkpoint. Un collègue peut reprendre avec les mêmes preuves."
+      ],
+      "cards": ["TÉLÉPHONE", "CHATGPT + CONNECTEUR", "GIT + CI DISTANTE"],
+      "footer": "Aucune session agent de bureau nécessaire pour ce parcours"
+    },
+    {
+      "id": "quotas", "title": "Des ressources, pas des miracles", "kicker": "06 / QUOTAS ET CHOIX D'OUTILS",
+      "lines": [
+        "Pourquoi cette séparation est-elle intéressante ? Parce qu'elle permet de choisir l'outil nécessaire à chaque étape.",
+        "Une lecture d'issue, une mise à jour de fichier ou une vérification de pipeline peuvent passer directement par les connecteurs disponibles.",
+        "Pour une application graphique, un poste local ou des interactions complexes, Work ou Codex peuvent rester indispensables.",
+        "Mais ne pas démarrer Codex ne signifie pas zéro token. La conversation ChatGPT utilise bien un modèle et ses limites applicables.",
+        "Les tests déterministes n'utilisent aucun jeton de modèle s'ils ne font aucun appel à une intelligence artificielle, mais ils consomment éventuellement des minutes de runner.",
+        "Les offres et les quotas évoluent. La mutualisation annoncée des allocations ChatGPT et Codex rend toute promesse durable d'économie de quota imprudente.",
+        "Sans mesures comparables, on parle donc d'un routage plus sélectif, pas d'un pourcentage d'économie démontré."
+      ],
+      "cards": ["CONNECTEURS", "RUNNERS CI", "WORK / CODEX"],
+      "footer": "Zéro session Codex ≠ zéro consommation IA"
+    },
+    {
+      "id": "comparaison", "title": "Et avec Claude Code ?", "kicker": "07 / COMPARAISON ÉQUITABLE",
+      "lines": [
+        "Le principe n'appartient ni à OpenAI ni à Anthropic. Claude Code peut lui aussi utiliser Git, des connecteurs, des outils MCP et la CI.",
+        "Il peut même fonctionner dans le cloud, sans dépendre directement d'un poste allumé, selon le produit et l'environnement choisis.",
+        "La comparaison honnête oppose donc deux modes de travail : des sessions isolées sans convention partagée, et une orchestration appuyée sur Git.",
+        "Dans les deux écosystèmes, on peut documenter les décisions, diviser les chantiers et retrouver des preuves de test.",
+        "La valeur particulière de cette implémentation tient à son protocole explicite, aux frontières entre satellites, aux checkpoints et au routage sélectif.",
+        "Ce n'est pas une invention des principes GitOps ou de la mémoire externalisée. C'est une combinaison opérationnelle qui cherche à rendre le pilotage lisible."
+      ],
+      "cards": ["CHATGPT + GIT", "ÉTAT PARTAGÉ", "CLAUDE + GIT"],
+      "footer": "Comparer les architectures, pas opposer les marques"
+    },
+    {
+      "id": "limites", "title": "La mémoire des faits, pas la magie", "kicker": "08 / LIMITES ET CONCLUSION",
+      "lines": [
+        "Cette architecture possède aussi des limites. Un assistant ne continue pas automatiquement son chantier entre deux conversations.",
+        "Toute action exige un déclencheur explicite, un outil autorisé et les droits correspondants.",
+        "Il faut protéger les secrets, préserver les frontières de branche, relire les demandes sensibles et contrôler ce qui devient public.",
+        "Un pipeline vert prouve seulement les propriétés que ses tests vérifient. Pour une vidéo, un test ffprobe ne remplace pas un visionnage humain.",
+        "Malgré ces limites, la promesse reste simple : ne plus dépendre d'un souvenir approximatif de conversation pour savoir où en est un chantier.",
+        "L'IA peut changer, le poste peut s'éteindre et une session peut s'interrompre. Les décisions, les preuves et la prochaine action restent dans Git.",
+        "C'est cela, ContinuityOps : un système de continuité, et non un assistant qui prétend tout savoir."
+      ],
+      "cards": ["DÉCISIONS", "PREUVES", "PROCHAINE ACTION"],
+      "footer": "Culture DevOps · Simplifiez · Automatisez · Innovez"
+    }
+  ]
+}

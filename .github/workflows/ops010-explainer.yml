@@ -1,0 +1,27 @@
+name: OPS-010 - 720p explainer source contract (no media)
+on:
+  pull_request:
+    paths:
+      - 'compositions/culturedevops/chatgpt-gitlab/**'
+      - 'scripts/render_chatgpt_gitlab.py'
+      - 'tests/test_explainer.py'
+      - '.github/workflows/ops010-explainer.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  explainer-offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Validate storyboard, subtitles and non-publication rules
+        run: |
+          python -m unittest discover -s tests -p test_explainer.py -v
+          python -m py_compile scripts/render_chatgpt_gitlab.py
+      - name: Render is intentionally local and no media is uploaded
+        run: |
+          echo 'NO_MEDIA_ARTIFACT: protected Android review uses the ChatGPT conversation attachment, not this public GitHub repo.'
