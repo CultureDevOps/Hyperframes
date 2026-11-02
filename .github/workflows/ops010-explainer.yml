@@ -60,7 +60,13 @@ jobs:
           from ops010_voice import load_voice
           load_voice('piper',Path(os.environ['VOICE_MODEL'])).wav('Un chantier, un état vérifiable, une prochaine action claire.',Path(os.environ['VOICE_OUT']))
           PY
-          ffprobe -v error -show_entries stream=sample_rate,channels,duration -of default=noprint_wrappers=1 "$VOICE_OUT"
+          python - <<'PY'
+          import os, wave
+          with wave.open(os.environ['VOICE_OUT'], 'rb') as w:
+              rate, channels, frames = w.getframerate(), w.getnchannels(), w.getnframes()
+          assert rate == 22050 and channels == 1 and frames > 22050, (rate, channels, frames)
+          print(f'NEURAL_WAV_CHECK: {frames / rate:.2f}s, {rate}Hz mono PCM')
+          PY
           test -s "$VOICE_OUT"
           echo 'NEURAL_FRENCH_WAV_OK; NO MEDIA UPLOAD'
           rm -f "$VOICE_OUT"
