@@ -136,6 +136,22 @@
         "kind": "local_french_override"
       },
       "case_sensitive": true
+    },
+    {
+      "term": "pipeline",
+      "tts_fr": "paille peu laïne",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      }
+    },
+    {
+      "term": "pipelines",
+      "tts_fr": "paille peu laïne",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      }
     }
   ]
 }
