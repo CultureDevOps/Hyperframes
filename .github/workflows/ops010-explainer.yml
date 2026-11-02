@@ -264,9 +264,9 @@ jobs:
           from ops010_pronunciation import speech_for_fr_it, read_lexicon
           destination=Path(os.environ['OPS010_OUTPUT'])
           destination.mkdir(parents=True, exist_ok=False)
-          phrase=("Le HUB utilise GitLab et GitHub. Docker et Kubernetes "
-                  "fonctionnent avec la CI/CD. ChatGPT et Codex vérifient "
-                  "le SHA et le MCP. Ce langage DevOps reste technique.")
+          phrase=("Le HUB utilise GitLab et GitHub. Le pipeline et les pipelines "
+                  "fonctionnent avec Docker, Kubernetes et la CI/CD. ChatGPT et Codex "
+                  "vérifient le SHA et le MCP. Ce langage DevOps reste technique.")
           modified=speech_for_fr_it(phrase)
           assert modified != phrase
           engine=load_voice('piper',Path(os.environ['OPS010_MODEL']))
