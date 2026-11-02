@@ -112,12 +112,12 @@
     },
     {
       "term": "ChatGPT",
-      "tts_fr": "tchatte, gé, pé, té",
+      "tts_fr": "tchatte gé pé té",
       "status": "trial_unreviewed",
       "origin": {
         "kind": "local_french_override"
       },
-      "review_note": "Après écoute utilisateur : ancienne variante tchat gé pé té encore perçue comme shagpt. Variante explicitement syllabée à revalider par écoute."
+      "review_note": "Retour d'écoute : « tchatte » satisfait pour l'attaque, mais les virgules prononcent G ... P ... T trop séparément ; essai hybride = attaque « tchatte » et ancienne fin sans ponctuation « gé pé té ». Prononciation non validée à l'écoute."
     },
     {
       "term": "CI/CD",

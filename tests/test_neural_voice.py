@@ -62,9 +62,10 @@ class NeuralVoiceTests(unittest.TestCase):
         self.assertEqual(speech_for_fr_it("celui-ci est ici ; SHA et CI"),"celui-ci est ici ; cha et cé i")
         self.assertEqual(speech_for_fr_it("le hub du projet"),"le hub du projet")
         self.assertEqual(speech_for_fr_it("La CI est passée"),"La cé i est passée")
-        self.assertEqual(speech_for_fr_it("ChatGPT"),"tchatte, gé, pé, té")
-        self.assertEqual(speech_for_fr_it("Le HUB et ChatGPT lisent GitLab."),"Le heub et tchatte, gé, pé, té lisent guite lab.")
-        self.assertEqual(speech_for_fr_it("chatgpt"),"tchatte, gé, pé, té")
+        self.assertEqual(speech_for_fr_it("ChatGPT"),"tchatte gé pé té")
+        self.assertEqual(speech_for_fr_it("Le HUB et ChatGPT lisent GitLab."),"Le heub et tchatte gé pé té lisent guite lab.")
+        self.assertEqual(speech_for_fr_it("chatgpt"),"tchatte gé pé té")
+        self.assertNotIn(",", speech_for_fr_it("ChatGPT"))
 
     def test_trial_requires_opt_in_and_original_srt(self):
         renderer=(ROOT/"scripts/render_chatgpt_gitlab.py").read_text()
