@@ -32,9 +32,9 @@ class ExplainerTests(unittest.TestCase):
             self.assertNotIn('Bokashix/infrastructure-knowledge',path)
             self.assertNotIn('glpat-',path)
     def test_non_publishing_and_render_contract(self):
-        for term in ('ffprobe','1280','720','30','libx264','aac','subtitles','espeak','mix.wav','picture-only.mp4'):
+        for term in ('ffprobe','1280','720','30','libx264','aac','subtitles','load_voice','mix.wav','picture-only.mp4'):
             self.assertIn(term,self.py)
         for forbidden in ('upload-artifact','github release','curl ','https://','requests.post'):
             self.assertNotIn(forbidden,self.py)
-        self.assertIn('300<=duration<=420',self.py)
+        self.assertIn('240<=duration<=600',self.py)
 if __name__=='__main__':unittest.main()

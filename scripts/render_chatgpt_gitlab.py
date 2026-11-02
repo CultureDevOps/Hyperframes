@@ -9,12 +9,13 @@ No upload, no network TTS, no public media artifact.
 """
 from __future__ import annotations
 import argparse, asyncio, json, math, subprocess, tempfile, wave
+from ops010_voice import load_voice, SAMPLE_RATE
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 COMPOSITION=ROOT/'compositions/culturedevops/chatgpt-gitlab'
 DATA=json.loads((COMPOSITION/'narration.json').read_text(encoding='utf-8'))
-RATE=22050
+RATE=SAMPLE_RATE
 
 def command(args):
     subprocess.run([str(x) for x in args],check=True,stdout=subprocess.DEVNULL)
@@ -39,14 +40,14 @@ def subtitles(items, path):
             cursor=next_time
     path.write_text('\n'.join(lines),encoding='utf-8')
 
-def narration(work):
+def narration(work, engine):
     import array
     all_audio=array.array('h');cues=[];durations=[];cursor=0.;voice_samples=0
     for i,scene in enumerate(DATA['scenes']):
         start=cursor
         for j,phrase in enumerate(scene['lines']):
             p=work/f'voice-{i:02}-{j:02}.wav'
-            command(['espeak','-v','fr','-s','156','-a','145','-w',p,phrase])
+            engine.wav(phrase, p)
             with wave.open(str(p),'rb') as w:
                 if w.getnchannels()!=1 or w.getsampwidth()!=2 or w.getframerate()!=RATE:
                     raise RuntimeError('Unexpected eSpeak PCM format')
@@ -101,16 +102,21 @@ def concat_file(work,durations):
     f=work/'slideshow.ffconcat';f.write_text('\n'.join(content)+'\n',encoding='utf-8');return f
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--only-assets',action='store_true');p.add_argument('--work',type=Path);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--only-assets',action='store_true');p.add_argument('--work',type=Path)
+    p.add_argument('--voice', choices=('piper','espeak'), default='piper')
+    p.add_argument('--piper-model', type=Path, help='Pinned Siwis ONNX voice file; never downloaded automatically')
+    args=p.parse_args()
     args.output=args.output.resolve();args.output.parent.mkdir(parents=True,exist_ok=True)
     if args.output.is_relative_to(ROOT):
         raise SystemExit('Refusing MP4 inside public Git checkout')
     with tempfile.TemporaryDirectory(prefix='ops010-local-') if args.work is None else __import__('contextlib').nullcontext(str(args.work)) as folder:
         work=Path(folder);work.mkdir(parents=True,exist_ok=True)
-        voice,cues,durations,duration=narration(work)
+        engine=load_voice(args.voice,args.piper_model)
+        voice,cues,durations,duration=narration(work,engine)
         srt=args.output.with_suffix('.srt');subtitles(cues,srt)
         print(f'VOICE_DURATION={duration:.3f} secs; chapters={list(round(x,1) for x in durations)}',flush=True)
-        if not 300<=duration<=420:raise RuntimeError('Narration out of expected 5–7 minute range')
+        if not 240<=duration<=600:raise RuntimeError('Narration outside guarded 4–10 minute range')
+        print(f'VOICE_BACKEND={args.voice} duration set by actual audio',flush=True)
         asyncio.run(images(work))
         if args.only_assets:return
         music=soundtrack(work,duration);concat=concat_file(work,durations)

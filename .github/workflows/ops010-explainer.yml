@@ -4,7 +4,9 @@ on:
     paths:
       - 'compositions/culturedevops/chatgpt-gitlab/**'
       - 'scripts/render_chatgpt_gitlab.py'
+      - 'scripts/ops010_voice.py'
       - 'tests/test_explainer.py'
+      - 'tests/test_neural_voice.py'
       - '.github/workflows/ops010-explainer.yml'
   workflow_dispatch:
 permissions:
@@ -21,7 +23,44 @@ jobs:
       - name: Validate storyboard, subtitles and non-publication rules
         run: |
           python -m unittest discover -s tests -p test_explainer.py -v
+          python -m unittest discover -s tests -p test_neural_voice.py -v
           python -m py_compile scripts/render_chatgpt_gitlab.py
       - name: Render is intentionally local and no media is uploaded
         run: |
           echo 'NO_MEDIA_ARTIFACT: protected Android review uses the ChatGPT conversation attachment, not this public GitHub repo.'
+  neural-smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Install pinned neural synthesis package
+        run: python -m pip install --disable-pip-version-check 'piper-tts==1.8.0'
+      - name: Download pinned French voice and verify integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://huggingface.co/rhasspy/piper-voices/resolve/d5de91c972ba5a13cea0e77a63fda1623faac2c1/fr/fr_FR/siwis/medium'
+          curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx"
+          curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx.json" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx.json"
+          echo '641d1ab097da2b81128c076810edb052b385decc8be3381814802a64a73baf99  '"$RUNNER_TEMP/fr_FR-siwis-medium.onnx" | sha256sum --check
+      - name: Synthesize only a synthetic French sentence, validate WAV, delete media
+        shell: bash
+        run: |
+          set -euo pipefail
+          export VOICE_MODEL="$RUNNER_TEMP/fr_FR-siwis-medium.onnx"
+          export VOICE_OUT="$RUNNER_TEMP/ops010-tts-sample.wav"
+          python - <<'PY'
+          import os, sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from ops010_voice import load_voice
+          load_voice('piper',Path(os.environ['VOICE_MODEL'])).wav('Un chantier, un état vérifiable, une prochaine action claire.',Path(os.environ['VOICE_OUT']))
+          PY
+          ffprobe -v error -show_entries stream=sample_rate,channels,duration -of default=noprint_wrappers=1 "$VOICE_OUT"
+          test -s "$VOICE_OUT"
+          echo 'NEURAL_FRENCH_WAV_OK; NO MEDIA UPLOAD'
+          rm -f "$VOICE_OUT"
