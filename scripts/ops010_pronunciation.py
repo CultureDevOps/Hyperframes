@@ -31,6 +31,10 @@ def speech_for_fr_it(text: str, lexicon: dict | None = None) -> str:
     if not mapping:
         return text
     # Longest-first: CI/CD must win over CI, and GitHub over generic HUB.
-    terms = sorted((i["term"] for i in data["entries"]), key=lambda x: (-len(x), x.casefold()))
-    pattern = re.compile(r"(?<!\w)(?:"+"|".join(re.escape(w) for w in terms)+r")(?!\w)", re.IGNORECASE)
+    entries = sorted(data["entries"], key=lambda i: (-len(i["term"]), i["term"].casefold()))
+    alternatives = [
+        f"(?-i:{re.escape(i['term'])})" if i.get("case_sensitive") else re.escape(i["term"])
+        for i in entries
+    ]
+    pattern = re.compile(r"(?<!\w)(?:"+"|".join(alternatives)+r")(?!\w)", re.IGNORECASE)
     return pattern.sub(lambda m: mapping[m.group().casefold()], text)

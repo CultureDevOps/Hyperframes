@@ -17,7 +17,8 @@
       "status": "trial_unreviewed",
       "origin": {
         "kind": "local_french_override"
-      }
+      },
+      "case_sensitive": true
     },
     {
       "term": "GitLab",
@@ -94,7 +95,8 @@
         "respelling_us": "shah",
         "confidence": "contested",
         "kind": "upstream_reference"
-      }
+      },
+      "case_sensitive": true
     },
     {
       "term": "MCP",
@@ -105,7 +107,8 @@
         "respelling_us": "M C P",
         "confidence": "community-consensus",
         "kind": "upstream_reference"
-      }
+      },
+      "case_sensitive": true
     },
     {
       "term": "ChatGPT",
@@ -121,7 +124,8 @@
       "status": "trial_unreviewed",
       "origin": {
         "kind": "local_french_override"
-      }
+      },
+      "case_sensitive": true
     },
     {
       "term": "CI",
@@ -129,7 +133,8 @@
       "status": "trial_unreviewed",
       "origin": {
         "kind": "local_french_override"
-      }
+      },
+      "case_sensitive": true
     }
   ]
 }
