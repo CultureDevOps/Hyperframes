@@ -72,7 +72,7 @@ class PowerShellLocalReviewTests(unittest.TestCase):
         self.assertRegex(workflow, r"tests[/\\]test_windows_acl\.ps1")
         self.assertNotIn("upload-artifact", workflow)
         self.assertNotIn("upload_artifact", workflow)
-        self.assertNotIn("hyperframes render", workflow)
+        # A separate PR-only ephemeral smoke may render synthetic media.\n        # The PowerShell plan-only jobs must still never render or publish.\n        offline = workflow.split("\n  test-offline:", 1)[1].split("\n  lint-compositions:", 1)[0]\n        windows = workflow.split("\n  test-windows-local:", 1)[1].split("\n  reference-render-smoke:", 1)[0]\n        self.assertNotIn("hyperframes render", offline + windows)
         self.assertIn("python -m unittest discover -s tests -p test_render_and_review_ps1.py", workflow)
         self.assertIn("runs-on: windows-2022", workflow)
 
