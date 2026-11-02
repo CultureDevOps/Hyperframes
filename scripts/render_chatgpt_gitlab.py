@@ -24,11 +24,19 @@ def srt_timestamp(t):
     return f'{h:02}:{m:02}:{s:02},{ms:03}'
 
 def subtitles(items, path):
-    lines=[]
-    for n,(start,end,text) in enumerate(items,1):
-        from textwrap import wrap
-        wrapped='\n'.join(wrap(text,width=61,break_long_words=False,break_on_hyphens=False)[:3])
-        lines.extend([str(n),f'{srt_timestamp(start)} --> {srt_timestamp(end)}',wrapped,''])
+    """Break each spoken sentence into phone-readable short caption chunks."""
+    lines=[]; number=0
+    for start,end,text in items:
+        words=text.split()
+        chunks=[words[i:i+10] for i in range(0,len(words),10)]
+        cursor=start
+        for i,group in enumerate(chunks):
+            next_time=end if i==len(chunks)-1 else start+(end-start)*sum(len(c) for c in chunks[:i+1])/len(words)
+            number+=1
+            from textwrap import wrap
+            wrapped='\n'.join(wrap(' '.join(group),width=42,break_long_words=False,break_on_hyphens=False))
+            lines.extend([str(number),f'{srt_timestamp(cursor)} --> {srt_timestamp(next_time)}',wrapped,''])
+            cursor=next_time
     path.write_text('\n'.join(lines),encoding='utf-8')
 
 def narration(work):
@@ -106,7 +114,7 @@ def main():
         asyncio.run(images(work))
         if args.only_assets:return
         music=soundtrack(work,duration);concat=concat_file(work,durations)
-        fontstyle="FontName=DejaVu Sans,FontSize=21,PrimaryColour=&HFFFFFF,OutlineColour=&H070B19,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=28"
+        fontstyle="FontName=DejaVu Sans,FontSize=14,PrimaryColour=&HFFFFFF,OutlineColour=&H070B19,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=42"
         # SRT is generated only from our own plain-text narration; no external MP4 parsing.
         subpath=str(srt).replace('\\','/').replace(':','\\:').replace("'","\\'")
         vf=f"fps=30,scale=1280:720:flags=lanczos,format=yuv420p,subtitles='{subpath}':force_style='{fontstyle}'"
