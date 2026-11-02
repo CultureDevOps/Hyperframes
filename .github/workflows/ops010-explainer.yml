@@ -322,3 +322,108 @@ jobs:
             --notes "Deux WAV comparatifs courts, même voix Piper Siwis française, synthèse originale vs lexique FR-IT expérimental, écoute humaine demandée. Il ne s'agit pas d'une nouvelle vidéo complète ni d'une validation de la prononciation. Source de référence dictionnaire MIT : anzy-renlab-ai/pronounce commit 138cb7e717d3f73e3aa80d879a99a2ebd989981f ; copyright (c) 2026 say-it contributors. Modèle voix Siwis CC BY 4.0 ; Piper GPL-3.0-or-later. GitHub PR #10 HEAD $SOURCE_SHA. Aucune production ni fusion." \
             --prerelease
           echo "OPS010_PUBLIC_AB_RELEASE_OK tag=$tag sha=$SOURCE_SHA"
+
+  chatgpt-syllables-review-release:
+    # Public short synthetic samples ONLY following explicit one-off PR approval.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'edited' &&
+      github.event.pull_request.number == 10 &&
+      github.event.pull_request.head.repo.full_name == 'CultureDevOps/Hyperframes' &&
+      github.event.pull_request.head.ref == 'ops010/chatgpt-gitlab-explainer-720p-20261102' &&
+      contains(github.event.pull_request.body, 'OPS010_PUBLIC_CHATGPT_SYLLABLE_AB_APPROVED_20261102') &&
+      !contains(github.event.changes.body.from, 'OPS010_PUBLIC_CHATGPT_SYLLABLE_AB_APPROVED_20261102')
+    needs: explainer-offline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Install pinned Piper, not cloud TTS
+        run: python -m pip install --disable-pip-version-check 'piper-tts==1.8.0'
+      - name: Download pinned French voice and check checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://huggingface.co/rhasspy/piper-voices/resolve/d5de91c972ba5a13cea0e77a63fda1623faac2c1/fr/fr_FR/siwis/medium'
+          curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx"
+          curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx.json" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx.json"
+          echo '641d1ab097da2b81128c076810edb052b385decc8be3381814802a64a73baf99  '"$RUNNER_TEMP/fr_FR-siwis-medium.onnx" | sha256sum --check
+      - name: Synthesize and verify two ChatGPT pronunciations only
+        shell: bash
+        env:
+          OPS010_MODEL: ${{ runner.temp }}/fr_FR-siwis-medium.onnx
+          OPS010_OUTPUT: ${{ runner.temp }}/ops010-chatgpt-syllables
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, os, sys, wave
+          from copy import deepcopy
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from ops010_voice import load_voice
+          from ops010_pronunciation import read_lexicon, speech_for_fr_it
+          dst=Path(os.environ['OPS010_OUTPUT'])
+          dst.mkdir(parents=True,exist_ok=False)
+          phrase="ChatGPT reprend le chantier. Avec ChatGPT, le suivi reste clair."
+          current=read_lexicon()
+          previous=deepcopy(current)
+          old=next(x for x in previous['entries'] if x['term']=='ChatGPT')
+          new=next(x for x in current['entries'] if x['term']=='ChatGPT')
+          assert new['tts_fr']=="tchatte, gé, pé, té"
+          old['tts_fr']="tchat gé pé té"
+          a=speech_for_fr_it(phrase,previous)
+          b=speech_for_fr_it(phrase,current)
+          assert a != b and a.count(old['tts_fr'])==2 and b.count(new['tts_fr'])==2
+          voice=load_voice('piper',Path(os.environ['OPS010_MODEL']))
+          files=[dst/'01-chatgpt-ancienne-prononciation.wav',dst/'02-chatgpt-prononciation-articulee.wav']
+          voice.wav(a,files[0])
+          voice.wav(b,files[1])
+          for path in files:
+              with wave.open(str(path),'rb') as w:
+                  assert (w.getframerate(),w.getnchannels(),w.getsampwidth())==(22050,1,2)
+                  length=w.getnframes()/w.getframerate()
+                  assert 2 < length < 30, length
+              print(f"OPS010_CHATGPT_AB_WAV_VERIFIED name={path.name} duration={length:.3f}s sha256={hashlib.sha256(path.read_bytes()).hexdigest()}")
+          assert hashlib.sha256(files[0].read_bytes()).digest() != hashlib.sha256(files[1].read_bytes()).digest()
+          (dst/'README.txt').write_text(
+              "OPS-010 - Comparaison ChatGPT, voix FR Piper Siwis\n\n"
+              "Texte canonique identique dans les deux extraits :\n"+phrase+"\n\n"
+              "Ancienne graphie TTS :\n"+a+"\n\n"
+              "Nouvelle graphie TTS :\n"+b+"\n\n"
+              "Seul ChatGPT diffère ; adaptations expérimentales, écoute nécessaire.\n"
+              "Sous-titres et narration source : inchangés.\n"
+              "Dictionnaire de référence MIT : anzy-renlab-ai/pronounce, commit "+
+              current['source']['commit']+" (non utilisé pour ChatGPT).\n"
+              "Copyright (c) 2026 say-it contributors.\n",encoding='utf-8')
+          PY
+      - name: Publish new targeted ChatGPT A/B prerelease only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          OPS010_OUTPUT: ${{ runner.temp }}/ops010-chatgpt-syllables
+        run: |
+          set -euo pipefail
+          tag="ops010-chatgpt-syllables-${HEAD_SHA:0:12}"
+          if gh release view "$tag" --repo CultureDevOps/Hyperframes >/dev/null 2>&1; then
+            echo "Release tag exists; refusing replacement: $tag"
+            exit 1
+          fi
+          gh release create "$tag" \
+            "$OPS010_OUTPUT/01-chatgpt-ancienne-prononciation.wav" \
+            "$OPS010_OUTPUT/02-chatgpt-prononciation-articulee.wav" \
+            "$OPS010_OUTPUT/README.txt" \
+            --repo CultureDevOps/Hyperframes \
+            --target "$HEAD_SHA" \
+            --title "OPS-010 - ChatGPT : prononciation française ciblée A/B" \
+            --notes "Deux courts WAV de revue pour ChatGPT : ancienne variante vs nouvelle prononciation syllabée, même phrase fictive et même voix Piper Siwis française. Nouveau rendu non validé par écoute. Aucune nouvelle vidéo, kit privé, fusion ou production. Voix Siwis dataset CC BY 4.0, Piper GPL-3.0-or-later, référence lexicale MIT anzy-renlab-ai/pronounce. Source PR #10 commit $HEAD_SHA." \
+            --prerelease
+          echo "OPS010_CHATGPT_SYLLABLE_RELEASE_OK tag=$tag sha=$HEAD_SHA"
