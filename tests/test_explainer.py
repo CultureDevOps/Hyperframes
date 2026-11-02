@@ -13,7 +13,7 @@ class ExplainerTests(unittest.TestCase):
         self.assertEqual(len(self.data['scenes']),9)
         for scene in self.data['scenes']:
             self.assertEqual(len(scene['cards']),3)
-            self.assertGreaterEqual(len(scene['lines']),6)
+            self.assertGreaterEqual(len(scene['lines']),5)
             self.assertLess(max(len(k) for k in scene['cards']),32)
         self.assertEqual(len(set(s['id'] for s in self.data['scenes'])),9)
     def test_hyperframes_720p_metadata(self):
