@@ -68,3 +68,21 @@ une revue éditoriale est nécessaire. La fenêtre technique de sécurité autor
 L'ancien moteur est conservé uniquement pour comparaison avec `--voice espeak`.
 La CI exécute un smoke de voix française sur **une phrase fictive**, supprime le WAV,
 et n'exporte aucun média ni aucun modèle.
+
+## Lot suivant : scénario Starter Kit fictif et reprise d'une CI obsolète
+
+Le film ajoute une étape « Comprendre → Installer → Expérimenter » à partir des
+capacités **documentées mais encore privées et en revue de licence** du Starter Kit
+OPS-028. Seuls trois textes de commande génériques et un scénario inventé sont
+affichés ; le code du kit, ses fichiers privés et les URL de GitLab ne sont
+**pas** redistribués. Le scénario explique la génération de 19 fichiers hors
+ligne, la création d'un projet GitLab privé et la reprise d'une CI obsolète.
+
+La composition contient désormais **9 chapitres**, dont deux vues terminal
+pilotées par trois états. La durée audiovisuelle provient exclusivement de
+la narration Piper et non de la métadonnée indicative HTML.
+La CI `full-neural-render-check` exécute le rendu complet et `ffprobe` lors
+d'une synchronisation de PR #10 : 720p, 30fps, H.264, AAC, SRT, durée sous
+contrôle. Les MP4 restent temporaires et sont supprimés ; aucun upload,
+release, publication Pages, ou fusion automatique. Une CI verte ne fournit
+pas un lien de visionnage et ne remplace pas la revue humaine.

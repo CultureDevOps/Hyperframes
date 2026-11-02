@@ -17,10 +17,10 @@ h1{font-size:58px;line-height:1.08;letter-spacing:-1.8px;margin:0 0 22px;font-we
 .timeline{position:absolute;left:75px;right:75px;bottom:67px;height:4px;background:#1c3550;border-radius:4px;overflow:hidden}.timeline .bar{height:100%;background:linear-gradient(90deg,#4bc9ff,#64ecc4);width:0;transition:width .7s}
 .footer{position:absolute;left:76px;bottom:25px;font-size:16px;color:#9ab1ca;letter-spacing:.7px}.note{position:absolute;right:75px;bottom:25px;color:#6e8ea9;font-size:15px}
 #scene{opacity:1;animation:sceneIn .8s ease-out both}@keyframes sceneIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
-</style></head><body>
-<main class="stage" data-no-timeline data-composition-id="continuityops-chatgpt-gitlab" data-start="0" data-duration="390" data-width="1280" data-height="720" data-fps="30">
-<div class="brand">CULTURE<span>DEVOPS</span> <span style="color:#879ab0;font-size:15px">/ CONTINUITYOPS</span></div><div class="chap" id="chap">01 / 08</div>
-<div class="content" id="scene"><div class="kicker" id="kicker">01 / LE CONSTAT</div><h1 id="title">Le vrai problème n'est pas le code</h1><p class="explain" id="explain">Trois chantiers. Une interruption. Où est la vérité ?</p><div class="flow" id="flow"><div class="node"><strong>CI en échec</strong></div><div class="arrow">→</div><div class="node"><strong>Fonctionnalité</strong></div><div class="arrow">→</div><div class="node"><strong>Audit sécurité</strong></div></div><div class="diagramtag" id="tag">Trois chantiers · Une interruption · Plusieurs décisions</div></div>
+.demo-panel{border:2px solid #397396;border-radius:20px;background:linear-gradient(140deg,#091a2d,#162e45);min-height:232px;padding:23px 31px;box-shadow:0 15px 60px #0007;margin-top:8px}.demo-panel[hidden]{display:none}.demo-badge{color:#6df4c3;letter-spacing:2px;font-size:16px;font-weight:900}.demo-title{color:#fff;font-size:31px;font-weight:900;margin:17px 0}.demo-command{font-family:monospace;font-size:24px;line-height:1.4;color:#ffe68b;overflow-wrap:anywhere}.demo-detail{font-size:19px;color:#b2cde3;margin-top:18px}.stage[data-demo="true"] h1{font-size:47px}.stage[data-demo="true"] .explain{font-size:21px;line-height:1.28;min-height:63px}.stage[data-demo="true"] .content{bottom:120px}.stage[data-demo="true"] .diagramtag{margin-top:16px}</style></head><body>
+<main class="stage" data-no-timeline data-composition-id="continuityops-chatgpt-gitlab" data-start="0" data-duration="420" data-width="1280" data-height="720" data-fps="30">
+<div class="brand">CULTURE<span>DEVOPS</span> <span style="color:#879ab0;font-size:15px">/ CONTINUITYOPS</span></div><div class="chap" id="chap">01 / 09</div>
+<div class="content" id="scene"><div class="kicker" id="kicker">01 / LE CONSTAT</div><h1 id="title">Le vrai problème n'est pas le code</h1><p class="explain" id="explain">Trois chantiers. Une interruption. Où est la vérité ?</p><div class="flow" id="flow"><div class="node"><strong>CI en échec</strong></div><div class="arrow">→</div><div class="node"><strong>Fonctionnalité</strong></div><div class="arrow">→</div><div class="node"><strong>Audit sécurité</strong></div></div><div id="demo-panel" class="demo-panel" hidden><div class="demo-badge">EXEMPLE FICTIF · AUCUN COMPTE RÉEL</div><div id="demo-title" class="demo-title"></div><div id="demo-command" class="demo-command"></div><div id="demo-detail" class="demo-detail"></div></div><div class="diagramtag" id="tag">Trois chantiers · Une interruption · Plusieurs décisions</div></div>
 <div class="timeline"><div class="bar" id="bar"></div></div><div class="footer">LES CONVERSATIONS CHANGENT · LES FAITS RESTENT DANS GIT</div><div class="note">EXEMPLE FICTIF · 02 NOV 2026</div>
 </main><script>
 /* Rendering harness sets the public editorial JSON; no network or privileged API. */
@@ -30,7 +30,17 @@ window.renderFrame=function(payload,idx,step){
  document.getElementById('kicker').textContent=s.kicker;document.getElementById('title').textContent=s.title;
  document.getElementById('explain').textContent=s.lines[Math.min(s.lines.length-1,Math.floor((s.lines.length-1)*phase/2))];
  document.getElementById('tag').textContent=s.footer;
- const flow=document.getElementById('flow');flow.replaceChildren();
+ const activeDemo=s.starter_steps||s.evidence_steps;
+ const panel=document.getElementById('demo-panel');
+ panel.hidden=!activeDemo;
+ document.querySelector('.stage').dataset.demo=String(Boolean(activeDemo));
+ if(activeDemo){
+   const item=activeDemo[phase];
+   document.getElementById('demo-title').textContent=item.title;
+   document.getElementById('demo-command').textContent=item.command;
+   document.getElementById('demo-detail').textContent=item.detail;
+ }
+ const flow=document.getElementById('flow');flow.style.display=activeDemo?'none':'flex';flow.replaceChildren();
  s.cards.forEach((value,i)=>{const node=document.createElement('div');node.className='node';node.dataset.active=String(i===phase);const strong=document.createElement('strong');strong.textContent=value;node.appendChild(strong);const small=document.createElement('small');small.textContent=['ÉTAPE 01','ÉTAPE 02','ÉTAPE 03'][i];node.appendChild(small);flow.appendChild(node);if(i<2){const a=document.createElement('div');a.className='arrow';a.textContent='→';flow.appendChild(a);}});
  document.getElementById('bar').style.width=(((idx+phase/3+0.1)/payload.scenes.length)*100).toFixed(1)+'%';
 };
