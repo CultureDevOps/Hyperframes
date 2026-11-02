@@ -109,6 +109,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--only-assets',action='store_true');p.add_argument('--work',type=Path)
     p.add_argument('--voice', choices=('piper','espeak'), default='piper')
     p.add_argument('--piper-model', type=Path, help='Pinned Siwis ONNX voice file; never downloaded automatically')
+    p.add_argument('--pronunciation-trial', action='store_true', help='Experimental French IT TTS only; subtitles unchanged')
     args=p.parse_args()
     args.output=args.output.resolve();args.output.parent.mkdir(parents=True,exist_ok=True)
     if args.output.is_relative_to(ROOT):
@@ -116,11 +117,15 @@ def main():
     with tempfile.TemporaryDirectory(prefix='ops010-local-') if args.work is None else __import__('contextlib').nullcontext(str(args.work)) as folder:
         work=Path(folder);work.mkdir(parents=True,exist_ok=True)
         engine=load_voice(args.voice,args.piper_model)
+        if args.pronunciation_trial:
+            if args.voice!='piper':
+                raise ValueError('Pronunciation trial requires Piper voice')
+            engine.pronunciation_trial = True
         voice,cues,durations,duration=narration(work,engine)
         srt=args.output.with_suffix('.srt');subtitles(cues,srt)
         print(f'VOICE_DURATION={duration:.3f} secs; chapters={list(round(x,1) for x in durations)}',flush=True)
         if not 240<=duration<=600:raise RuntimeError('Narration outside guarded 4–10 minute range')
-        print(f'VOICE_BACKEND={args.voice} duration set by actual audio',flush=True)
+        print(f'VOICE_BACKEND={args.voice} duration set by actual audio; pronunciation_trial={args.pronunciation_trial}',flush=True)
         asyncio.run(images(work))
         if args.only_assets:return
         music=soundtrack(work,duration);concat=concat_file(work,durations)

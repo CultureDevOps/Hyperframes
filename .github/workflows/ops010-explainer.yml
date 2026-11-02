@@ -6,6 +6,8 @@ on:
       - 'compositions/culturedevops/chatgpt-gitlab/**'
       - 'scripts/render_chatgpt_gitlab.py'
       - 'scripts/ops010_voice.py'
+      - 'scripts/ops010_pronunciation.py'
+      - 'scripts/ops010-pronunciation-fr.json'
       - 'tests/test_explainer.py'
       - 'tests/test_neural_voice.py'
       - '.github/workflows/ops010-explainer.yml'
@@ -48,29 +50,39 @@ jobs:
           curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx"
           curl --fail --location --retry 2 --silent --show-error "$BASE/fr_FR-siwis-medium.onnx.json" -o "$RUNNER_TEMP/fr_FR-siwis-medium.onnx.json"
           echo '641d1ab097da2b81128c076810edb052b385decc8be3381814802a64a73baf99  '"$RUNNER_TEMP/fr_FR-siwis-medium.onnx" | sha256sum --check
-      - name: Synthesize only a synthetic French sentence, validate WAV, delete media
+      - name: Compare original and corrected French IT speech, no media upload
         shell: bash
         run: |
           set -euo pipefail
           export VOICE_MODEL="$RUNNER_TEMP/fr_FR-siwis-medium.onnx"
-          export VOICE_OUT="$RUNNER_TEMP/ops010-tts-sample.wav"
+          export VOICE_BASE="$RUNNER_TEMP/ops010-fr-it-baseline.wav"
+          export VOICE_TRIAL="$RUNNER_TEMP/ops010-fr-it-trial.wav"
+          trap 'rm -f "$VOICE_BASE" "$VOICE_TRIAL"' EXIT
           python - <<'PY'
-          import os, sys
+          import os, sys, wave, hashlib
           from pathlib import Path
           sys.path.insert(0,'scripts')
           from ops010_voice import load_voice
-          load_voice('piper',Path(os.environ['VOICE_MODEL'])).wav('Un chantier, un état vérifiable, une prochaine action claire.',Path(os.environ['VOICE_OUT']))
+          from ops010_pronunciation import speech_for_fr_it
+          sentence="Le HUB vérifie GitLab, GitHub et la CI/CD. Docker et Kubernetes. ChatGPT relit le SHA."
+          voice=load_voice('piper',Path(os.environ['VOICE_MODEL']))
+          first=Path(os.environ['VOICE_BASE'])
+          trial=Path(os.environ['VOICE_TRIAL'])
+          voice.wav(sentence,first)
+          voice.pronunciation_trial=True
+          voice.wav(sentence,trial)
+          assert speech_for_fr_it(sentence)!=sentence
+          times=[]
+          for file in (first,trial):
+              with wave.open(str(file),'rb') as w:
+                  assert w.getframerate()==22050 and w.getnchannels()==1 and w.getsampwidth()==2
+                  duration=w.getnframes()/w.getframerate()
+                  assert 4<duration<65, duration
+                  times.append(round(duration,3))
+          assert hashlib.sha256(first.read_bytes()).digest()!=hashlib.sha256(trial.read_bytes()).digest()
+          print(f'OPS010_IT_FR_AB_SYNTH_OK original={times[0]}s trial={times[1]}s rate=22050 mono; no file uploaded')
+          print('PRONUNCIATION_QUALITY_NOT_YET_HUMAN_VALIDATED')
           PY
-          python - <<'PY'
-          import os, wave
-          with wave.open(os.environ['VOICE_OUT'], 'rb') as w:
-              rate, channels, frames = w.getframerate(), w.getnchannels(), w.getnframes()
-          assert rate == 22050 and channels == 1 and frames > 22050, (rate, channels, frames)
-          print(f'NEURAL_WAV_CHECK: {frames / rate:.2f}s, {rate}Hz mono PCM')
-          PY
-          test -s "$VOICE_OUT"
-          echo 'NEURAL_FRENCH_WAV_OK; NO MEDIA UPLOAD'
-          rm -f "$VOICE_OUT"
 
   public-neural-preview:
     # This job runs ONLY when OPS-010 PR #10's body has just received the

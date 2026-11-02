@@ -4,6 +4,7 @@ import hashlib
 import json
 import subprocess
 import wave
+from ops010_pronunciation import speech_for_fr_it
 from pathlib import Path
 
 SAMPLE_RATE = 22050
@@ -33,12 +34,14 @@ class PiperFrench:
             raise RuntimeError('Install piper-tts==1.8.0 for neural speech') from error
         self.voice = PiperVoice.load(str(model))
         self.settings = SynthesisConfig(length_scale=1.12, noise_scale=0.58, noise_w_scale=0.72)
+        self.pronunciation_trial = False
 
     def wav(self, phrase: str, path: Path) -> None:
         if not phrase.strip():
             raise ValueError('Empty narration')
         with wave.open(str(path), 'wb') as output:
-            self.voice.synthesize_wav(phrase, output, self.settings)
+            speech = speech_for_fr_it(phrase) if self.pronunciation_trial else phrase
+            self.voice.synthesize_wav(speech, output, self.settings)
 
 class EspeakFrench:
     """Legacy comparison only; not recommended for final distribution."""

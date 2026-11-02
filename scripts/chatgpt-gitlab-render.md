@@ -86,3 +86,34 @@ d'une synchronisation de PR #10 : 720p, 30fps, H.264, AAC, SRT, durée sous
 contrôle. Les MP4 restent temporaires et sont supprimés ; aucun upload,
 release, publication Pages, ou fusion automatique. Une CI verte ne fournit
 pas un lien de visionnage et ne remplace pas la revue humaine.
+
+## Pilote de prononciation française technique (OPS-010)
+
+Base documentaire **réutilisée** : `anzy-renlab-ai/pronounce`, commit
+`138cb7e717d3f73e3aa80d879a99a2ebd989981f`, fichier
+`data/pronunciations.tsv`, licence **MIT** ; copyright (c) 2026
+say-it contributors. URL : https://github.com/anzy-renlab-ai/pronounce .
+Un sous-ensemble limité de prononciations anglaises est conservé avec son
+origine et ses catégories ; seuls les termes qui n'existent pas dans la base
+reçoivent une entrée locale. Le TSV est **General American**, non français :
+les suggestions `tts_fr` ne sont **pas validées par écoute**.
+
+Les règles fonctionnent uniquement sur une **copie du texte de synthèse** :
+l'image, les titres, `narration.json` et le SRT demeurent orthographiés
+correctement. Le script `scripts/ops010_pronunciation.py` charge
+`scripts/ops010-pronunciation-fr.json` hors réseau, puis réécrit les
+termes entiers avec priorité aux plus longs (par exemple CI/CD avant CI).
+
+Le pilote est **désactivé par défaut** pour les rendus officiels. Exemple :
+
+```sh
+python scripts/render_chatgpt_gitlab.py --voice piper \
+  --piper-model /dossier/prive/fr_FR-siwis-medium.onnx \
+  --pronunciation-trial --output /dossier/prive/revue-experimentale.mp4
+```
+
+Le smoke GitHub Actions synthétise **deux WAV réels** (texte original et
+prononciations expérimentales), contrôle PCM/durées et différence binaire,
+puis supprime les fichiers sans publication ni artefact. Ce test établit
+l'exécution technique, **pas le bon accent** : validation d'écoute sur
+un court échantillon avant de changer la narration de production.
