@@ -1,0 +1,208 @@
+{
+  "schema": 1,
+  "language": "fr",
+  "source": "OPS-028 V2.2 et Starter Kit non publie — demonstration entierement fictive",
+  "scenes": [
+    {
+      "id": "probleme",
+      "title": "Trois chantiers, puis une interruption",
+      "kicker": "01 / LE PROBLÈME",
+      "cards": [
+        "CI en échec",
+        "Fonctionnalité",
+        "Audit sécurité"
+      ],
+      "footer": "Exemple fictif · Plusieurs chantiers, une interruption",
+      "lines": [
+        "Imaginez trois chantiers menés en parallèle avec des assistants d'intelligence artificielle.",
+        "Le premier corrige une intégration continue. Le deuxième ajoute une fonctionnalité. Le troisième vérifie des droits d'accès.",
+        "Les assistants savent coder et tester, mais une question demeure : comment reprendre leur travail après une interruption ?",
+        "Un message disant presque terminé ne prouve pas qu'un commit a été livré ni qu'un pipeline est passé.",
+        "Le problème principal n'est donc pas le modèle. C'est la continuité des décisions et des preuves."
+      ]
+    },
+    {
+      "id": "rupture",
+      "title": "Sans état partagé, on reconstruit tout",
+      "kicker": "02 / LA RUPTURE",
+      "cards": [
+        "Retrouver le chat",
+        "Reconstruire",
+        "Vérifier le dépôt"
+      ],
+      "footer": "La mémoire du chat ≠ la source de vérité",
+      "lines": [
+        "Le lendemain, une nouvelle conversation démarre. Sans protocole commun, elle doit retrouver les échanges précédents.",
+        "Elle risque de refaire des tests, de reprendre une ancienne branche ou d'ignorer une décision déjà prise.",
+        "Pour l'audit sécurité, une validation humaine était attendue. Cette attente ne doit surtout pas devenir une autorisation implicite.",
+        "Ce problème peut toucher ChatGPT, Codex comme Claude Code : il ne dépend pas d'une seule marque.",
+        "Pour éviter l'enquête, il faut un état compact : objectif, décision, SHA, demande de fusion, CI et prochaine action."
+      ]
+    },
+    {
+      "id": "architecture",
+      "title": "HUB, satellites et GitLab",
+      "kicker": "03 / L'ARCHITECTURE",
+      "cards": [
+        "HUB — arbitrages",
+        "SATELLITES — branches",
+        "GITLAB — preuves"
+      ],
+      "footer": "Le registre Git reste consultable après la session",
+      "lines": [
+        "Dans ContinuityOps, le HUB coordonne les priorités, les dépendances et les décisions sensibles.",
+        "Chaque satellite exécute un chantier limité, rattaché à une issue GitLab et une branche dédiée.",
+        "Les satellites ne se parlent pas automatiquement : ils déposent leurs résultats dans le registre Git.",
+        "Ce registre conserve les décisions durables, les checkpoints, les commits, les demandes de fusion et les pipelines.",
+        "Un collègue peut consulter les mêmes preuves sans avoir accès à l'historique des conversations."
+      ]
+    },
+    {
+      "id": "protocole",
+      "title": "REPRENDRE → AGIR → CHECKPOINT",
+      "kicker": "04 / LE PROTOCOLE",
+      "cards": [
+        "REPRENDRE",
+        "AGIR",
+        "CHECKPOINT"
+      ],
+      "footer": "Issue → SHA → MR → CI → action suivante",
+      "lines": [
+        "Reprendre commence par lire la bonne issue et son dernier checkpoint significatif.",
+        "On contrôle ensuite le HEAD actuel, la demande de fusion et la CI, car une note ancienne peut déjà être dépassée.",
+        "Agir consiste à livrer un incrément autorisé : code, test, documentation ou nouvelle demande de fusion.",
+        "Les contrôles déterministes s'exécutent dans la CI, sans appel à un modèle lorsque ce n'est pas nécessaire.",
+        "Enfin, le checkpoint consigne le SHA précis, les preuves vérifiées, les limites et la prochaine étape.",
+        "Ce rituel rend le travail transmissible d'une session à l'autre."
+      ]
+    },
+    {
+      "id": "demo",
+      "title": "Du téléphone à la CI distante",
+      "kicker": "05 / SANS POSTE LOCAL",
+      "cards": [
+        "TÉLÉPHONE",
+        "CHATGPT + CONNECTEUR",
+        "GITLAB + CI"
+      ],
+      "footer": "Pas de session agentique lourde obligatoire pour ce parcours",
+      "lines": [
+        "Vous êtes en déplacement. Le poste personnel est éteint, mais GitLab reste accessible.",
+        "Depuis le téléphone, ChatGPT classique peut lire une issue et son checkpoint via un connecteur autorisé.",
+        "Il peut ensuite préparer une modification, ouvrir une demande de fusion et vérifier la CI distante.",
+        "Ce parcours ne démarre pas nécessairement de session Work ou Codex, mais le chat utilise bien un modèle.",
+        "Les runners consomment éventuellement du temps de calcul. Aucun pourcentage d'économie n'est démontré ici."
+      ]
+    },
+    {
+      "id": "starter",
+      "title": "Installer un laboratoire fictif",
+      "kicker": "06 / STARTER KIT — DÉMONSTRATION",
+      "cards": [
+        "BOOTSTRAP",
+        "GITLAB PRIVÉ",
+        "TESTS ET ISSUE"
+      ],
+      "footer": "Kit en revue · Exemple illustratif, pas un téléchargement du kit",
+      "starter_steps": [
+        {
+          "title": "01 — Générer hors ligne",
+          "command": "python3 bootstrap.py --destination ../labo-ops --project-name \"Labo OPS\"",
+          "detail": "Destination neuve · 19 fichiers de projet · Aucun secret"
+        },
+        {
+          "title": "02 — Créer un projet GitLab privé",
+          "command": "git init -b main && git add . && git commit -m \"init\"",
+          "detail": "Lier ensuite le dépôt distant privé · Pas de vraie URL affichée"
+        },
+        {
+          "title": "03 — Vérifier le laboratoire",
+          "command": "python3 -m unittest discover -s tests -v",
+          "detail": "Créer une issue Task, une branche, une MR et un checkpoint"
+        }
+      ],
+      "lines": [
+        "Voyons comment démarrer avec un Starter Kit, sur un exemple entièrement fictif.",
+        "Dans un dossier contenant le kit, on exécute son bootstrap Python vers une destination neuve. Il prépare dix-neuf fichiers sans réseau.",
+        "Le laboratoire contient des instructions pour les agents, des modèles d'issues, des décisions et un exemple testé.",
+        "Ensuite, on crée un projet GitLab privé et vide, puis on initialise Git et on pousse les fichiers après avoir configuré l'accès.",
+        "On lance les tests Python, puis on crée une issue et une branche pour le premier chantier.",
+        "Ce kit reste en revue et sa licence n'est pas validée : l'écran illustre la démarche, pas une distribution publique."
+      ]
+    },
+    {
+      "id": "reprise",
+      "title": "Une CI verte peut devenir obsolète",
+      "kicker": "07 / CAS FICTIF : DEUX SESSIONS",
+      "cards": [
+        "CHECKPOINT HISTORIQUE",
+        "NOUVEAU HEAD",
+        "CORRIGER ET REVÉRIFIER"
+      ],
+      "footer": "SHA et CI de démonstration exclusivement fictifs",
+      "evidence_steps": [
+        {
+          "title": "Lundi — checkpoint historique",
+          "command": "HEAD 2222…  ·  MR !8  ·  CI #1001 : SUCCÈS",
+          "detail": "Décision : préserver la casse · Nouvelle revue attendue"
+        },
+        {
+          "title": "Mardi — nouvelle session",
+          "command": "HEAD 3333…  ·  CI #1002 : ÉCHEC",
+          "detail": "Le checkpoint d'hier ne prouve plus l'état du code"
+        },
+        {
+          "title": "Après correction",
+          "command": "HEAD 4444…  ·  CI #1003 : SUCCÈS",
+          "detail": "Nouvelle vérification, puis checkpoint daté"
+        }
+      ],
+      "lines": [
+        "Le Starter Kit fournit aussi un exercice de reprise, avec des SHA et pipelines inventés.",
+        "Le lundi, une première session rédige un checkpoint : la demande de fusion numéro huit est verte, à un SHA précis.",
+        "Le mardi, une autre session découvre que le HEAD a changé et que le pipeline suivant est en échec.",
+        "Elle ne reprend pas l'ancienne CI verte comme une preuve actuelle. Elle lit les logs et corrige uniquement son périmètre.",
+        "Quand la CI repasse, elle publie un nouveau checkpoint avec le SHA réellement contrôlé.",
+        "Voilà l'idée : la continuité vient de la vérification des faits, pas d'une mémoire supposée parfaite."
+      ]
+    },
+    {
+      "id": "comparaison",
+      "title": "Même protocole, outils différents",
+      "kicker": "08 / COMPARAISON ÉQUITABLE",
+      "cards": [
+        "CHATGPT + GIT",
+        "ÉTAT PARTAGÉ",
+        "CLAUDE + GIT"
+      ],
+      "footer": "Le bénéfice vient de l'organisation, pas du fournisseur",
+      "lines": [
+        "Cette architecture peut aussi être appliquée avec Claude Code, GitLab, les outils MCP et la CI.",
+        "Claude Code peut fonctionner dans le cloud selon l'offre et l'environnement, sans poste local allumé.",
+        "Ce que nous comparons, ce sont des sessions isolées contre des sessions coordonnées par un registre de travail.",
+        "ChatGPT classique et ses connecteurs permettent certaines opérations distantes sans ouvrir systématiquement un agent de bureau.",
+        "Mais zéro session Codex ne signifie jamais zéro consommation IA. Les quotas et les offres peuvent évoluer.",
+        "Nous ne revendiquons aucun gain chiffré de temps, de tokens ou d'argent sans mesures comparables."
+      ]
+    },
+    {
+      "id": "limites",
+      "title": "Le projet garde la mémoire des faits",
+      "kicker": "09 / CONCLUSION",
+      "cards": [
+        "DÉCISIONS",
+        "PREUVES",
+        "PROCHAINE ACTION"
+      ],
+      "footer": "Culture DevOps · Simplifiez · Automatisez · Innovez",
+      "lines": [
+        "Un système de checkpoints n'est pas une magie : sans déclencheur explicite, aucun assistant ne travaille automatiquement entre les sessions.",
+        "Chaque action dépend de droits limités, de validations humaines et de frontières de branches claires.",
+        "Un pipeline vert ne prouve que ce que ses tests vérifient, et une publication demande une autorisation.",
+        "Mais les décisions, les preuves et la prochaine action restent consultables même si une conversation s'arrête.",
+        "Pour essayer le pattern, commencez par un chantier fictif, des tests déterministes et un checkpoint vérifiable.",
+        "Les assistants peuvent changer. Le contrat du projet, lui, reste dans Git."
+      ]
+    }
+  ]
+}

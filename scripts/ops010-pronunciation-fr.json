@@ -1,0 +1,157 @@
+{
+  "schema": 1,
+  "language": "fr-FR",
+  "purpose": "OPS-010 speech-only pilot, no subtitle replacement",
+  "source": {
+    "repository": "anzy-renlab-ai/pronounce",
+    "commit": "138cb7e717d3f73e3aa80d879a99a2ebd989981f",
+    "file": "data/pronunciations.tsv",
+    "license": "MIT",
+    "license_notice": "Copyright (c) 2026 say-it contributors",
+    "phonetic_language": "en-US"
+  },
+  "entries": [
+    {
+      "term": "HUB",
+      "tts_fr": "heub",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      },
+      "case_sensitive": true
+    },
+    {
+      "term": "GitLab",
+      "tts_fr": "guite lab",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ˈɡɪtˌlæb/",
+        "respelling_us": "git lab",
+        "confidence": "community-consensus",
+        "kind": "upstream_reference"
+      }
+    },
+    {
+      "term": "GitHub",
+      "tts_fr": "guite heub",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ˈɡɪtˌhʌb/",
+        "respelling_us": "git hub",
+        "confidence": "community-consensus",
+        "kind": "upstream_reference"
+      }
+    },
+    {
+      "term": "Docker",
+      "tts_fr": "dokeur",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ˈdɒkər/",
+        "respelling_us": "dock er",
+        "confidence": "community-consensus",
+        "kind": "upstream_reference"
+      }
+    },
+    {
+      "term": "Kubernetes",
+      "tts_fr": "koubeurnétisse",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ˌkuːbərˈnɛtiːz/",
+        "respelling_us": "koober netteez",
+        "confidence": "community-consensus",
+        "kind": "upstream_reference"
+      }
+    },
+    {
+      "term": "DevOps",
+      "tts_fr": "dèv ops",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ˈdɛv ɒps/",
+        "respelling_us": "dev ops",
+        "confidence": "community-consensus",
+        "kind": "upstream_reference"
+      }
+    },
+    {
+      "term": "Codex",
+      "tts_fr": "codèxe",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ˈkoʊdɛks/",
+        "respelling_us": "co decks",
+        "confidence": "community-consensus",
+        "kind": "upstream_reference"
+      }
+    },
+    {
+      "term": "SHA",
+      "tts_fr": "cha",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ʃɑː/",
+        "respelling_us": "shah",
+        "confidence": "contested",
+        "kind": "upstream_reference"
+      },
+      "case_sensitive": true
+    },
+    {
+      "term": "MCP",
+      "tts_fr": "ème cé pé",
+      "status": "trial_unreviewed",
+      "origin": {
+        "ipa": "/ˌɛm siː ˈpiː/",
+        "respelling_us": "M C P",
+        "confidence": "community-consensus",
+        "kind": "upstream_reference"
+      },
+      "case_sensitive": true
+    },
+    {
+      "term": "ChatGPT",
+      "tts_fr": "tchatte gé pé té",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      },
+      "review_note": "Retour d'écoute : « tchatte » satisfait pour l'attaque, mais les virgules prononcent G ... P ... T trop séparément ; essai hybride = attaque « tchatte » et ancienne fin sans ponctuation « gé pé té ». Prononciation non validée à l'écoute."
+    },
+    {
+      "term": "CI/CD",
+      "tts_fr": "cé i cé dé",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      },
+      "case_sensitive": true
+    },
+    {
+      "term": "CI",
+      "tts_fr": "cé i",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      },
+      "case_sensitive": true
+    },
+    {
+      "term": "pipeline",
+      "tts_fr": "paille peu laïne",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      }
+    },
+    {
+      "term": "pipelines",
+      "tts_fr": "paille peu laïne",
+      "status": "trial_unreviewed",
+      "origin": {
+        "kind": "local_french_override"
+      }
+    }
+  ]
+}
